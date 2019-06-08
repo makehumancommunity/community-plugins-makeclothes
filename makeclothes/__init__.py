@@ -1,0 +1,44 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+#  Author: Joel Palmius
+
+from bpy.utils import register_class, unregister_class
+from .extraproperties import extraProperties
+from .makeclothes2 import MHC_PT_MakeClothesPanel
+from .operators import *
+
+bl_info = {
+    "name": "MakeClothes",
+    "author": "Joel Palmius",
+    "version": (2,1,0),
+    "blender": (2,80,0),
+    "location": "View3D > Properties > Make Target",
+    "description": "Create MakeHuman Clothes",
+    'wiki_url': "http://www.makehumancommunity.org/",
+    "category": "MakeHuman"}
+
+
+MAKECLOTHES2_CLASSES = []
+MAKECLOTHES2_CLASSES.extend(OPERATOR_CLASSES)
+MAKECLOTHES2_CLASSES.append(MHC_PT_MakeClothesPanel)
+
+__all__ = [
+    "MHC_PT_MakeClothesPanel",
+    "MAKECLOTHES2_CLASSES"
+]
+
+def register():
+    extraProperties()
+    for cls in MAKECLOTHES2_CLASSES:
+        register_class(cls)
+
+def unregister():
+
+    for cls in reversed(MAKECLOTHES2_CLASSES):
+        unregister_class(cls)
+
+if __name__ == "__main__":
+    register()
+    print("MakeClothes2 loaded")
+
