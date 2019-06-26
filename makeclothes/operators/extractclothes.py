@@ -108,5 +108,5 @@ class MHC_OT_ExtractClothesOperator(bpy.types.Operator):
 
         newObj.location = humanObj.location
 
-        self.report({'INFO'}, "Extracting " + what)
+        self.report({'INFO'}, "Extracted " + what)
         return {'FINISHED'}
