@@ -15,11 +15,15 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
         layout = self.layout
         scn = context.scene
 
-        extractBox = layout.box()
-        extractBox.label(text="Extract clothes", icon="MESH_DATA")
+        setupBox = layout.box()
+        setupBox.label(text="Setup clothes mesh", icon="MESH_DATA")
+        setupBox.operator("makeclothes.mark_as_clothes", text="Mark as clothes")
 
-        extractBox.label(text="Vertex group:")
-        extractBox.prop(scn, 'MhExtractClothes', text="")
-        extractBox.operator("makeclothes.extract_clothes", text="Extract clothes")
-        #createBox.operator("mh_community.load_primary_target", text="Load target")
+        setupBox.label(text="Vertex group as clothes:")
+        setupBox.prop(scn, 'MhExtractClothes', text="")
+        setupBox.operator("makeclothes.extract_clothes", text="Extract clothes")
 
+        checkBox = layout.box()
+        checkBox.label(text="Check clothes", icon="MESH_DATA")
+        checkBox.operator("makeclothes.check_vertex_groups", text="Check vgroups")
+        checkBox.operator("makeclothes.check_faces", text="Check faces")
