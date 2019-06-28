@@ -7,25 +7,32 @@ from .mhvertex import MHVertex
 class MHMeshInfo:
 
     obj: None
-
-    vgroups: dict()
-    vertices: dict()
+    vgroups: None
+    vertices: None
 
     def __init__(self, obj):
         self.obj = obj
+        self.vgroups = dict()
+        self.vertices = dict()
 
         for group in obj.vertex_groups:
             if not group.index in self.vgroups:
                 vgroup = MHVGroup(group.name, group.index)
-                self.vgroups[group.index] = vgroup
+                self.vgroups[int(group.index)] = vgroup
 
         for vert in obj.data.vertices:
             mhvert = MHVertex(vert.index, vert.co[0], vert.co[1], vert.co[2])
 
             for group in vert.groups:
                 gidx = group.group
-                mhvgroup = self.vgroups[gidx]
-                mhvgroup.addVertex(mhvert)
+                print(gidx)
+                if not int(gidx) in self.vgroups:
+                    print("Vertex says it has group with index " + str(gidx) + ", but that group does not exist")
+                else:
+                    mhvgroup = self.vgroups[int(gidx)]
+                    mhvgroup.addVertex(mhvert)
+
+            self.vertices[mhvert.index] = mhvert
 
     def findClosestFour(self, foreignVert):
 
