@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import bpy, bmesh
-
+from ..sanitychecks import *
 
 class MHC_OT_CheckVGroupsOperator(bpy.types.Operator):
     """Extract one helper vertex group as clothes"""
@@ -21,5 +21,23 @@ class MHC_OT_CheckVGroupsOperator(bpy.types.Operator):
         return False
 
     def execute(self, context):
+
+        obj = context.active_object
+        if not checkHasAnyVGroups(obj):
+            self.report({'ERROR'}, "This object does not have any vertex group. It has to have at least one for MakeClothes to work.")
+            return {'FINISHED'}
+
+        if not checkAllVerticesBelongToAVGroup(obj):
+            self.report({'ERROR'}, "This object has vertices which do not belong to a vertex group.")
+            return {'FINISHED'}
+
+        if not checkAllVerticesBelongToAtMostOneVGroup(obj):
+            self.report({'ERROR'}, "This object has vertices which belong to multiple vertex groups")
+            return {'FINISHED'}
+
+        if not checkVertexGroupAssignmentsAreNotCorrupt(obj):
+            self.report({'ERROR'}, "This object has vertices which belong non-existing vertex groups, see console for more info")
+            return {'FINISHED'}
+
         self.report({'INFO'}, "Seems OK")
         return {'FINISHED'}
