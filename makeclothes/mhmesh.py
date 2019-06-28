@@ -4,7 +4,7 @@
 from .mhvgroup import MHVGroup
 from .mhvertex import MHVertex
 
-class MHMeshInfo:
+class MHMesh:
 
     obj: None
     vgroups: None
