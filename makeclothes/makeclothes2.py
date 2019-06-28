@@ -27,3 +27,7 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
         checkBox.label(text="Check clothes", icon="MESH_DATA")
         checkBox.operator("makeclothes.check_vertex_groups", text="Check vgroups")
         checkBox.operator("makeclothes.check_faces", text="Check faces")
+
+        produceBox = layout.box()
+        produceBox.label(text="Produce clothes", icon="MESH_DATA")
+        produceBox.operator("makeclothes.create_clothes", text="Make clothes")
