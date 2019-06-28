@@ -73,11 +73,12 @@ class MHC_OT_ExtractClothesOperator(bpy.types.Operator):
 
         bmNew = bmOld.copy()
 
-        groupIndexes = []
+        groupIndexes = dict()
 
         for group in humanObj.vertex_groups:
+            vg = newObj.vertex_groups.new(name=group.name)
             if group.name in groupNames:
-                groupIndexes.append(group.index)
+                groupIndexes[group.index] = group.name
 
         print(groupIndexes)
 
@@ -89,8 +90,6 @@ class MHC_OT_ExtractClothesOperator(bpy.types.Operator):
                 gidx = vert.groups[0].group
                 if not gidx in groupIndexes:
                     vertsToDelete.append(vert.index)
-
-        print(len(vertsToDelete))
 
         vertsToDelete.sort(reverse=True)
 
@@ -109,6 +108,27 @@ class MHC_OT_ExtractClothesOperator(bpy.types.Operator):
         newObj.location = humanObj.location
 
         newObj.MhObjectType = "Clothes"
+
+        # This is a stupid way to do it, but:
+        #
+        # * cloning a bmesh keeps vgroup index settings on each vertex
+        # * cloning a bmesh *does not* also clone vgroups
+        # * You can't create a vgroup with a specific index (index is read-only)
+        #
+        # Thus the only recourse is copying all vgroups and then delete the ones not relevant
+
+        for group in humanObj.vertex_groups:
+            vg = newObj.vertex_groups.new(name=group.name)
+
+        groupsToKeep = []
+
+        for vgidx in groupIndexes.keys():
+            name = groupIndexes[vgidx]
+            groupsToKeep.append(name)
+
+        for group in newObj.vertex_groups:
+            if not group.name in groupsToKeep:
+                newObj.vertex_groups.remove(group)
 
         self.report({'INFO'}, "Extracted " + what)
         return {'FINISHED'}
