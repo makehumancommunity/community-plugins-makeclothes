@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import bpy, bmesh
-
+from ..sanitychecks import *
 
 class MHC_OT_CheckFacesOperator(bpy.types.Operator):
     """Extract one helper vertex group as clothes"""
@@ -21,5 +21,16 @@ class MHC_OT_CheckFacesOperator(bpy.types.Operator):
         return False
 
     def execute(self, context):
+
+        obj = context.active_object
+
+        if not checkFacesHaveAtMostFourVertices(obj):
+            self.report({'ERROR'}, "This object has at least one face with more than four vertices. N-gons are not supported by MakeClothes.")
+            return {'FINISHED'}
+
+        if not checkFacesHaveTheSameNumberOfVertices(obj):
+            self.report({'ERROR'}, "This object has faces with different numbers of vertices. Tris *or* quads are supported, but not a mix of the two.")
+            return {'FINISHED'}
+
         self.report({'INFO'}, "Seems OK")
         return {'FINISHED'}

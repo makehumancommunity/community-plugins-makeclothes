@@ -33,3 +33,22 @@ def checkVertexGroupAssignmentsAreNotCorrupt(obj):
                 return False
     return True
 
+### --- FACE CHECKS --- ###
+
+def checkFacesHaveAtMostFourVertices(obj):
+    for polygon in obj.data.polygons:
+        verts_in_face = polygon.vertices[:]
+        if len(verts_in_face) > 4:
+            return False
+    return True
+
+def checkFacesHaveTheSameNumberOfVertices(obj):
+    countToLookFor = None
+    for polygon in obj.data.polygons:
+        verts_in_face = polygon.vertices[:]
+        if countToLookFor is None:
+            countToLookFor = len(verts_in_face)
+        else:
+            if len(verts_in_face) != countToLookFor:
+                return False
+    return True
