@@ -63,8 +63,15 @@ class MHMesh:
             self.vertexGroupVertexIndexMap[groupIndex] = indexArray
             self.vertexGroupVertices[groupIndex] = vertexArray
 
+    def vertexGroupNameToIndex(self, vertexGroupName):
+        for idx in self.vertexGroupNames.keys():
+            if self.vertexGroupNames[idx] == vertexGroupName:
+                return idx
+        print("Could not find vertex group " + vertexGroupName + " in this mesh. Available names are:")
+        print(self.vertexGroupNames)
+        return None
 
-    def getDistanceArray(self, vertexCoordinates, x, y, z):
+    def getDistanceArray(self, vertexGroupName, x, y, z):
         """
         Return an array with distances between the xyz coordinate given and each vertex listed in the vertexCoordinates array.
         The vertexCoordinates array is assumed to be a two-dimensional numpy array with the shape (n,3), i.e each row in the
@@ -82,6 +89,9 @@ class MHMesh:
 
           distance = sqrt(xdelta*xdelta + ydelta*ydelta + zdelta*zdelta
         """
+        idx = self.vertexGroupNameToIndex(vertexGroupName)
+        vertexCoordinates = self.vertexGroupVertices[idx]
+
         vertex = numpy.zeros(3)
         vertex[0] = x
         vertex[1] = y
@@ -101,3 +111,81 @@ class MHMesh:
 
         #print(sqrtArray)
         return sqrtArray
+
+    def getVertexAtExactLocation(self, vertexGroupName, x, y, z, maxdelta = 0.0001):
+        """
+        Return index of a vertex matching these coordinates, if existing. Otherwise None.
+
+        This looks for a match with a maximum of maxdelta fuzz, to account for float values
+        """
+        idx = self.vertexGroupNameToIndex(vertexGroupName)
+        vertexCoordinates = self.vertexGroupVertices[idx]
+
+        xmin = x - maxdelta
+        xmax = x + maxdelta
+
+        ymin = y - maxdelta
+        ymax = y + maxdelta
+
+        zmin = z - maxdelta
+        zmax = z + maxdelta
+
+        vidx = 0
+        for vert in vertexCoordinates:
+            xmatch = False
+            ymatch = False
+            zmatch = False
+            if vert[0] > xmin and vert[0] < xmax:
+                xmatch = True
+            if vert[1] > ymin and vert[1] < ymax:
+                ymatch = True
+            if vert[2] > zmin and vert[2] < zmax:
+                zmatch = True
+            if xmatch and ymatch and zmatch:
+                return self.vertexGroupVertexIndexMap[vidx]
+            vidx = vidx + 1
+        return None
+
+    def findClosestThreeVertices(self, vertexGroupName, x, y, z):
+        """
+        Return indexes of the three vertices which are the closest to the given coordinate.
+        """
+
+        distanceArray = self.getDistanceArray(vertexGroupName, x, y, z)
+
+        # Indexes within vertex group
+        localIndexes = [-1, -1, -1]
+
+        # Indexes within mesh
+        globalIndexes = [-1, -1, -1]
+
+        # This syntax is exceptionally strange, but it's supposed to look like this.
+        # Basically, "find all indexes of the minimum value in distanceArray"
+        minidxs = numpy.where(distanceArray == numpy.amin(distanceArray))
+        firstMin = minidxs[0]
+        localIndexes[0] = firstMin
+
+        # We then overwrite the found value so that the next time we repeat the
+        # same thing, we'll find the next smallest
+        distanceArray[firstMin] = 1000.0
+
+        minidxs = numpy.where(distanceArray == numpy.amin(distanceArray))
+        firstMin = minidxs[0]
+        localIndexes[1] = firstMin
+        distanceArray[firstMin] = 1000.0
+
+        minidxs = numpy.where(distanceArray == numpy.amin(distanceArray))
+        firstMin = minidxs[0]
+        localIndexes[2] = firstMin
+        distanceArray[firstMin] = 1000.0
+
+        print("The three smallest distances have the local indices: " + str(localIndexes))
+
+        globalIndexes[0] = self.vertexGroupVertexIndexMap[localIndexes[0]]
+        globalIndexes[1] = self.vertexGroupVertexIndexMap[localIndexes[2]]
+        globalIndexes[2] = self.vertexGroupVertexIndexMap[localIndexes[3]]
+
+        print("The three smallest distances have the global indices: " + str(globalIndexes))
+
+        return globalIndexes
+    
