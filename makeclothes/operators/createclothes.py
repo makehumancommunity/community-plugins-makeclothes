@@ -3,7 +3,7 @@
 
 import bpy, bmesh
 from ..sanitychecks import *
-from ..mhmesh import MHMesh
+from ..core_makeclothes_functionality import MakeClothes
 
 class MHC_OT_CreateClothesOperator(bpy.types.Operator):
     """Produce MHCLO file and MHMAT, copy textures"""
@@ -22,6 +22,29 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
         return False
 
     def execute(self, context):
+
+        humanObj = None
+
+        for obj in context.scene.objects:
+            if hasattr(obj, "MhObjectType"):
+                if obj.MhObjectType == "Basemesh":
+                    if humanObj is None:
+                        humanObj = obj
+                    else:
+                        self.report({'ERROR'}, "There are multiple human objects in this scene. To avoid errors, only use one.")
+                        return {'FINISHED'}
+
+        if humanObj is None:
+            self.report({'ERROR'}, "Could not find any human object in this scene.")
+            return {'FINISHED'}
+
+        if not checkHasAnyVGroups(humanObj):
+            self.report({'ERROR'}, "The human object does not have any vertex group. It has to have at least one for MakeClothes to work.")
+            return {'FINISHED'}
+
+        if not checkVertexGroupAssignmentsAreNotCorrupt(humanObj):
+            self.report({'ERROR'}, "The human object has vertices which belong non-existing vertex groups, see console for more info")
+            return {'FINISHED'}
 
         clothesObj = context.active_object
 
@@ -49,7 +72,13 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
             self.report({'ERROR'}, "This object has faces with different numbers of vertices. Tris *or* quads are supported, but not a mix of the two.")
             return {'FINISHED'}
 
-        clothesmesh = MHMesh(clothesObj)
+        if not checkAllVGroupsInFirstExistsInSecond(clothesObj, humanObj):
+            self.report({'ERROR'}, "There are vertex groups in the clothes object which do not exist in the human object. See console for more info.")
+            return {'FINISHED'}
 
-        self.report({'INFO'}, "Created clothes")
+        MakeClothes(clothesObj, humanObj)
+
+        self.report({'INFO'}, "No clothes actually created yet (not implemented), check console for vertex mappings")
         return {'FINISHED'}
+
+
