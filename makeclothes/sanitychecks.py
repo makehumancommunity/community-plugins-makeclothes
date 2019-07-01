@@ -33,6 +33,23 @@ def checkVertexGroupAssignmentsAreNotCorrupt(obj):
                 return False
     return True
 
+def checkAllVGroupsInFirstExistsInSecond(firstObj, secondObj):
+    firstObjVGroups = []
+    secondObjVGroups = []
+
+    for vg in firstObj.vertex_groups:
+        firstObjVGroups.append(vg.name)
+
+    for vg in secondObj.vertex_groups:
+        secondObjVGroups.append(vg.name)
+
+    for name in firstObjVGroups:
+        if not name in secondObjVGroups:
+            print("The " + name + " group is missing")
+            return False
+
+    return True
+
 ### --- FACE CHECKS --- ###
 
 def checkFacesHaveAtMostFourVertices(obj):
