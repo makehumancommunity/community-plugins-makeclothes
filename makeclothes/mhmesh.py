@@ -60,6 +60,16 @@ class MHMesh:
 
                 i = i + 1
 
+                # TODO:       All vertices should be stored with world space coordinates. Currently they
+                # TODO:       are all as local coordinates. Theoretically, all vertices should be multiplied
+                # TODO:       with the world matrix as per:
+                # TODO:
+                # TODO:       v_co_world = obj.matrix_world * obj.data.vertices[0].co
+                # TODO:
+                # TODO:       This pertains to a per-vertex operation. However, it would be hugely more
+                # TODO:       efficient to make this matrix multiplication one the whole numpy vertex array.
+                # TODO:       I'd just have to figure out how to do this
+
             self.vertexGroupVertexIndexMap[groupIndex] = indexArray
             self.vertexGroupVertices[groupIndex] = vertexArray
 
