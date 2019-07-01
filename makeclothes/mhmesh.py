@@ -161,6 +161,8 @@ class MHMesh:
         Return indexes of the three vertices which are the closest to the given coordinate.
         """
 
+        vgidx = self.vertexGroupNameToIndex(vertexGroupName)
+
         distanceArray = self.getDistanceArray(vertexGroupName, x, y, z)
 
         # Indexes within vertex group
@@ -172,7 +174,7 @@ class MHMesh:
         # This syntax is exceptionally strange, but it's supposed to look like this.
         # Basically, "find all indexes of the minimum value in distanceArray"
         minidxs = numpy.where(distanceArray == numpy.amin(distanceArray))
-        firstMin = minidxs[0]
+        firstMin = minidxs[0][0]
         localIndexes[0] = firstMin
 
         # We then overwrite the found value so that the next time we repeat the
@@ -180,22 +182,22 @@ class MHMesh:
         distanceArray[firstMin] = 1000.0
 
         minidxs = numpy.where(distanceArray == numpy.amin(distanceArray))
-        firstMin = minidxs[0]
+        firstMin = minidxs[0][0]
         localIndexes[1] = firstMin
         distanceArray[firstMin] = 1000.0
 
         minidxs = numpy.where(distanceArray == numpy.amin(distanceArray))
-        firstMin = minidxs[0]
+        firstMin = minidxs[0][0]
         localIndexes[2] = firstMin
         distanceArray[firstMin] = 1000.0
 
-        print("The three smallest distances have the local indices: " + str(localIndexes))
+        #print("The three smallest distances have the local indices: " + str(localIndexes))
 
-        globalIndexes[0] = self.vertexGroupVertexIndexMap[localIndexes[0]]
-        globalIndexes[1] = self.vertexGroupVertexIndexMap[localIndexes[2]]
-        globalIndexes[2] = self.vertexGroupVertexIndexMap[localIndexes[3]]
+        globalIndexes[0] = self.vertexGroupVertexIndexMap[vgidx][localIndexes[0]]
+        globalIndexes[1] = self.vertexGroupVertexIndexMap[vgidx][localIndexes[1]]
+        globalIndexes[2] = self.vertexGroupVertexIndexMap[vgidx][localIndexes[2]]
 
-        print("The three smallest distances have the global indices: " + str(globalIndexes))
+        #print("The three smallest distances have the global indices: " + str(globalIndexes))
 
         return globalIndexes
     
