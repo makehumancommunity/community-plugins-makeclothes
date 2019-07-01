@@ -23,6 +23,11 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
         setupBox.prop(scn, 'MhExtractClothes', text="")
         setupBox.operator("makeclothes.extract_clothes", text="Extract clothes")
 
+        humanBox = layout.box()
+        humanBox.label(text="Human", icon="MESH_DATA")
+        humanBox.operator("makeclothes.mark_as_human", text="Mark as human")
+        humanBox.operator("makeclothes.check_human", text="Check human")
+
         checkBox = layout.box()
         checkBox.label(text="Check clothes", icon="MESH_DATA")
         checkBox.operator("makeclothes.check_vertex_groups", text="Check vgroups")
