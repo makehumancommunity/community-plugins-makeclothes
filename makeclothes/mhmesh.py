@@ -70,7 +70,7 @@ class MHMesh:
             seed = self._seedGroups[groupIndex]
             vertexArray = numpy.zeros((len(seed), 3))
             indexArray = numpy.zeros(len(seed), dtype="i4")
-            i = 0;
+            i = 0
             for vert in seed:
                 vertexArray[i][0] = vert[1] # x
                 vertexArray[i][1] = vert[2] # y
