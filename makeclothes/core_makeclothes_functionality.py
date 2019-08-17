@@ -17,10 +17,19 @@ class _VertexMatch():
     def markExact(self, humanVertexIndex):
         self.exactMatch = humanVertexIndex
 
-    def setClosestIndices(self, v1, v2, v3):
+    def setClosestIndices(self, v1, v2, v3, v1c = None, v2c = None, v3c = None ):
         self.closestHumanVertexIndices[0] = v1
         self.closestHumanVertexIndices[1] = v2
         self.closestHumanVertexIndices[2] = v3
+
+        if v1c is None:
+            v1c = [0.0, 0.0, 0.0]
+        if v2c is None:
+            v2c = [0.0, 0.0, 0.0]
+        if v3c is None:
+            v3c = [0.0, 0.0, 0.0]
+
+        self.closestHumanVertexCoordinates = [v1c, v2c, v3c]
 
     def setWeights(self, w1, w2, w3):
         self.weights[0] = w1
@@ -37,7 +46,12 @@ class _VertexMatch():
             w2 = self.weights[1]
             w3 = self.weights[2]
 
-            return "{} {} {} {} {} {}".format(v1, v2, v3, w1, w2, w3)
+            dx = self.distance[0]
+            dy = self.distance[1]
+            dz = self.distance[2]
+
+            # MakeHuman order is XZY
+            return "{} {} {} {} {} {} {} {} {}".format(v1, v2, v3, w1, w2, w3, dx, dz, dy)
         else:
             return str(self.exactMatch)
 
@@ -72,17 +86,40 @@ class _MakeClothes():
                     vertexMatch.closestHumanVertexCoordinates = hCoord
                 self.vertexMatches.append(vertexMatch)
 
-    def findWeights(self):
+    def findWeightsAndDistances(self):
         for vertexMatch in self.vertexMatches:
             if not vertexMatch.exactMatch:
                 # TODO: Figure out what the weights actually mean
-                vertexMatch.setWeights(0.3, 0.3, 0.3)
+                vertexMatch.setWeights(0.333, 0.333, 0.334)
+
+        for vertexMatch in self.vertexMatches:
+            distance = [0,0,0]
+            if not vertexMatch.exactMatch:
+                v1 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[0]]
+                v2 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[0]]
+                v3 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[0]]
+
+                w1 = vertexMatch.weights[0]
+                w2 = vertexMatch.weights[1]
+                w3 = vertexMatch.weights[2]
+
+                medianPoint = [0.0, 0.0, 0.0]
+
+                # X for median point is (vert1 x * vert1 weight) + (vert2 x * vert2 weight) (vert3 x * vert3 weight)
+                medianPoint[0] = (v1[0] * w1) + (v2[0] * w2) + (v3[0] * w3)
+                medianPoint[1] = (v1[1] * w1) + (v2[1] * w2) + (v3[1] * w3)
+                medianPoint[2] = (v1[2] * w1) + (v2[2] * w2) + (v3[2] * w3)
+
+                distance[0] = abs(vertexMatch.x - medianPoint[0])
+                distance[1] = abs(vertexMatch.y - medianPoint[1])
+                distance[2] = abs(vertexMatch.z - medianPoint[2])
+            vertexMatch.distance = distance
 
 
 def MakeClothes(clothesObj, humanObj):
     mc = _MakeClothes(clothesObj, humanObj)
     mc.findClosestVertices()
-    mc.findWeights()
+    mc.findWeightsAndDistances()
 
     for vertexMatch in mc.vertexMatches:
         print(vertexMatch)
