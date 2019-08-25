@@ -1,5 +1,5 @@
 from .mhmesh import MHMesh
-import math
+import math, re, os, uuid
 
 class _VertexMatch():
 
@@ -55,14 +55,25 @@ class _VertexMatch():
         else:
             return str(self.exactMatch)
 
-class _MakeClothes():
+class MakeClothes():
 
-    def __init__(self, clothesObj, humanObj):
+    def __init__(self, clothesObj, humanObj, exportName="clothes", exportRoot="/tmp"):
         self.clothesObj = clothesObj
         self.humanObj = humanObj
         self.clothesmesh = MHMesh(clothesObj)
         self.humanmesh = MHMesh(humanObj)
         self.vertexMatches = []
+        self.exportName = exportName
+        self.exportRoot = exportRoot
+
+        self.findClosestVertices()
+        self.findWeightsAndDistances()
+
+        self.dirName = None
+        self.cleanedName = None
+
+        self.setupTargetDirectory()
+        self.writeMhClo()
 
     def findClosestVertices(self):
         for vgroupIdx in self.clothesmesh.vertexGroupNames.keys():
@@ -115,11 +126,33 @@ class _MakeClothes():
                 distance[2] = abs(vertexMatch.z - medianPoint[2])
             vertexMatch.distance = distance
 
+    def setupTargetDirectory(self):
+        cleanedName = re.sub(r'\s+',"_",self.exportName)
+        self.cleanedName = re.sub(r'[./\\]+', "", cleanedName)
+        self.dirName = os.path.join(self.exportRoot,cleanedName)
+        if not os.path.exists(self.dirName):
+            os.makedirs(self.dirName)
 
-def MakeClothes(clothesObj, humanObj):
-    mc = _MakeClothes(clothesObj, humanObj)
-    mc.findClosestVertices()
-    mc.findWeightsAndDistances()
+    def writeMhClo(self):
+        outputFile = os.path.join(self.dirName,self.cleanedName + ".mhclo")
+        with open(outputFile,"w") as f:
+            f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
+            f.write("# author: Unkown\n")
+            f.write("# license: CC0\n#\n")
+            f.write("basemesh hm08\n\n")
+            f.write("# Basic info:\n")
+            f.write("name " + self.exportName + "\n")
+            f.write("obj_file " + self.cleanedName + ".obj\n")
+            f.write("material " + self.cleanedName + ".mhmat" + "\n\n")
+            f.write("uuid " + str(uuid.uuid4()) + "\n")
+            f.write("# Settings: (I have no idea what the scale is derived from atm)\n")
+            f.write("x_scale 5399 11998 1.4800\n")
+            f.write("z_scale 962 5320 1.9221\n")
+            f.write("y_scale 791 881 2.3298\n")
+            f.write("z_depth 50\n\n")
+            f.write("# Vertex info:\n")
+            f.write("verts 0\n")
+            for vm in self.vertexMatches:
+                f.write(str(vm) + "\n")
 
-    for vertexMatch in mc.vertexMatches:
-        print(vertexMatch)
+
