@@ -22,3 +22,8 @@ _extractGroupDescription = "You can create a new mesh based on a vertex group in
 
 def extraProperties():
     bpy.types.Scene.MhExtractClothes = bpy.props.EnumProperty(items=_extractGroup, name="extract_clothes", description=_extractGroupDescription, default="BODY")
+    if not hasattr(bpy.types.Object, "MhObjectType"):
+        bpy.types.Object.MhObjectType = StringProperty(name="Object type", description="This is what type of MakeHuman object this is (such as Clothes, Eyes...)", default="")
+    if not hasattr(bpy.types.Object, "MhHuman"):
+        bpy.types.Object.MhHuman = BoolProperty(name="Is MH Human", description="Old makeclothes property for deciding object type", default=False)
+
