@@ -17,11 +17,19 @@ _extractGroup.append(("TEETH", "Teeth", "Create clothes from teeth",            
 _extractGroup.append(("TONGUE", "Tongue", "Create clothes from tongue",                8))
 _extractGroup.append(("GENITALS", "Genitals", "Create clothes from genitals",          9))
 _extractGroup.append(("HELPERS", "Helpers", "Entire helper geometry",                 10))
-
 _extractGroupDescription = "You can create a new mesh based on a vertex group in an imported human. Note that this is only possible if you imported with \"detailed helpers\". Without that, the only group possible to extract will be \"body\" and \"helpers\"."
+
+_licenses = []
+_licenses.append(("CC0",   "CC0", "Creative Commons Zero",                                                  1))
+_licenses.append(("CC-BY", "CC0", "Creative Commons Attribution",                                           2))
+_licenses.append(("AGPL",  "AGPL", "Affero Gnu Public License (don't use unless absolutely necessary)",     3))
+_licenseDescription = "Set an output license for the clothes. This will have no practical effect apart from being included in the written MHCLO file."
 
 def extraProperties():
     bpy.types.Scene.MhExtractClothes = bpy.props.EnumProperty(items=_extractGroup, name="extract_clothes", description=_extractGroupDescription, default="BODY")
+    bpy.types.Scene.MhClothesLicense = bpy.props.EnumProperty(items=_licenses, name="clothes_license", description=_licenseDescription, default="CC0")
+
+    # Object properties, normally set by MPFB
     if not hasattr(bpy.types.Object, "MhObjectType"):
         bpy.types.Object.MhObjectType = StringProperty(name="Object type", description="This is what type of MakeHuman object this is (such as Clothes, Eyes...)", default="")
     if not hasattr(bpy.types.Object, "MhHuman"):
