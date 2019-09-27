@@ -35,6 +35,10 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
 
         produceBox = layout.box()
         produceBox.label(text="Produce clothes", icon="MESH_DATA")
+        produceBox.label(text="Name")
+        produceBox.prop(scn, 'MhClothesName', text="")
+        produceBox.label(text="Description")
+        produceBox.prop(scn, 'MhClothesDesc', text="")
         produceBox.label(text="License")
         produceBox.prop(scn, 'MhClothesLicense', text="")
         produceBox.operator("makeclothes.create_clothes", text="Make clothes")
