@@ -1,9 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import bpy, bmesh
+import bpy, bmesh, os
 from ..sanitychecks import *
 from ..core_makeclothes_functionality import MakeClothes
+from ..utils import getClothesRoot
 
 class MHC_OT_CreateClothesOperator(bpy.types.Operator):
     """Produce MHCLO file and MHMAT, copy textures"""
@@ -76,9 +77,14 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
             self.report({'ERROR'}, "There are vertex groups in the clothes object which do not exist in the human object. See console for more info.")
             return {'FINISHED'}
 
-        MakeClothes(clothesObj, humanObj)
+        rootDir = getClothesRoot()
+        name = context.scene.MhClothesName
+        desc = context.scene.MhClothesDesc
+        license = context.scene.MhClothesLicense
 
-        self.report({'INFO'}, "No clothes actually created yet (not implemented), check console for vertex mappings")
+        MakeClothes(clothesObj, humanObj, exportName=name, exportRoot=rootDir, license=license, description=desc)
+
+        self.report({'INFO'}, "Clothes were written to " + os.path.join(rootDir,name))
         return {'FINISHED'}
 
 

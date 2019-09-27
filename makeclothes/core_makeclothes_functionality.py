@@ -57,7 +57,7 @@ class _VertexMatch():
 
 class MakeClothes():
 
-    def __init__(self, clothesObj, humanObj, exportName="clothes", exportRoot="/tmp"):
+    def __init__(self, clothesObj, humanObj, exportName="clothes", exportRoot="/tmp", license="CC0", description="No description"):
         self.clothesObj = clothesObj
         self.humanObj = humanObj
         self.clothesmesh = MHMesh(clothesObj)
@@ -65,6 +65,8 @@ class MakeClothes():
         self.vertexMatches = []
         self.exportName = exportName
         self.exportRoot = exportRoot
+        self.exportLicense = license
+        self.exportDescription = description
 
         self.findClosestVertices()
         self.findWeightsAndDistances()
@@ -138,7 +140,8 @@ class MakeClothes():
         with open(outputFile,"w") as f:
             f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
             f.write("# author: Unkown\n")
-            f.write("# license: CC0\n#\n")
+            f.write("# license: " + self.exportLicense + "\n#\n")
+            f.write("# description: " + self.exportDescription + "\n#\n")
             f.write("basemesh hm08\n\n")
             f.write("# Basic info:\n")
             f.write("name " + self.exportName + "\n")
