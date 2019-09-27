@@ -77,6 +77,7 @@ class MakeClothes():
         self.setupTargetDirectory()
         self.writeMhClo()
         self.writeObj()
+        self.writeMhMat()
 
     def findClosestVertices(self):
         for vgroupIdx in self.clothesmesh.vertexGroupNames.keys():
@@ -149,6 +150,7 @@ class MakeClothes():
             f.write("obj_file " + self.cleanedName + ".obj\n")
             f.write("material " + self.cleanedName + ".mhmat" + "\n\n")
             f.write("uuid " + str(uuid.uuid4()) + "\n")
+            # TODO: Figure out what the scale values are for
             f.write("# Settings: (I have no idea what the scale is derived from atm)\n")
             f.write("x_scale 5399 11998 1.4800\n")
             f.write("z_scale 962 5320 1.9221\n")
@@ -186,3 +188,32 @@ class MakeClothes():
                 for i in p.vertices:
                     f.write(" %d" % (i + 1))
                 f.write("\n")
+
+    def writeMhMat(self):
+        # TODO: This just writes a white dummy material for now
+        outputFile = os.path.join(self.dirName,self.cleanedName + ".mhmat")
+        with open(outputFile,"w") as f:
+            f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
+            f.write("# author: Unkown\n")
+            f.write("# license: " + self.exportLicense + "\n#\n")
+            f.write("name " + self.exportName + " material\n\n")
+
+            f.write("// Color shading attributes\n")
+            f.write("diffuseColor  0.64 0.64 0.64\n")
+            f.write("specularColor  0.5 0.5 0.5\n")
+            f.write("shininess 0\n")
+            f.write("opacity 1\n\n")
+
+            f.write("// Textures and properties\n\n")
+
+            f.write("// Shader programme\n")
+            f.write("shader data/shaders/glsl/phong\n\n")
+
+            f.write("// Configure built-in shader defines\n")
+            f.write("shaderConfig diffuse true\n")
+            f.write("shaderConfig bump false\n")
+            f.write("shaderConfig normal  false\n")
+            f.write("shaderConfig displacement  false\n")
+            f.write("shaderConfig spec  true\n")
+            f.write("shaderConfig vertexColors false\n")
+
