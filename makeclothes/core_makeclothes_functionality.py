@@ -76,6 +76,7 @@ class MakeClothes():
 
         self.setupTargetDirectory()
         self.writeMhClo()
+        self.writeObj()
 
     def findClosestVertices(self):
         for vgroupIdx in self.clothesmesh.vertexGroupNames.keys():
@@ -158,4 +159,30 @@ class MakeClothes():
             for vm in self.vertexMatches:
                 f.write(str(vm) + "\n")
 
+    def writeObj(self):
+        # Yes, I'm aware there is a wavefront exporter in the blender API already. However, we need to make
+        # sure that we're using the proper origin and scale.
 
+        obj = self.clothesObj
+        mesh = obj.data
+        outputFile = os.path.join(self.dirName, self.cleanedName + ".obj")
+        with open(outputFile,"w") as f:
+            f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
+            f.write("# license: " + self.exportLicense + "\n#\n")
+            texCo = []
+            for v in mesh.vertices:
+                # TODO: apply scale, origin
+                f.write("v %.4f %.4f %.4f\n" % v.co[:])
+                texCo.append([0.0, 0.0])
+            for face in mesh.polygons:
+                for vert_idx, loop_idx in zip(face.vertices, face.loop_indices):
+                    uv_coords = mesh.uv_layers.active.data[loop_idx].uv
+                    #f.write("# face idx: %i, vert idx: %i, uvs: %f, %f\n" % (face.index, vert_idx, uv_coords.x, uv_coords.y))
+                    texCo[vert_idx] = [uv_coords.x, uv_coords.y]
+            for uv in texCo:
+                f.write("vt " + str(uv[0]) + " " + str(uv[1]) + "\n")
+            for p in mesh.polygons:
+                f.write("f")
+                for i in p.vertices:
+                    f.write(" %d" % (i + 1))
+                f.write("\n")
