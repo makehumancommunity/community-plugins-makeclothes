@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import numpy
+import numpy, pprint
 
 class MHMesh:
 
@@ -174,7 +174,7 @@ class MHMesh:
             if vert[2] > zmin and vert[2] < zmax:
                 zmatch = True
             if xmatch and ymatch and zmatch:
-                return self.vertexGroupVertexIndexMap[vidx]
+                return self.vertexGroupVertexIndexMap[idx][vidx]
             vidx = vidx + 1
         return None
 
