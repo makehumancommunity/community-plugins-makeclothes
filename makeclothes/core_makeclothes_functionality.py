@@ -52,7 +52,7 @@ class _VertexMatch():
             dz = self.distance[2]
 
             # MakeHuman order is XZY
-            return "{} {} {} {} {} {} {} {} {}".format(v1, v2, v3, w1, w2, w3, dx, dz, dy)
+            return "%d %d %d %.4f %.4f %.4f %.4f %.4f %.4f" % (v1, v2, v3, w1, w2, w3, dx, dz, dy)
         else:
             return str(self.exactMatch)
 
@@ -105,15 +105,65 @@ class MakeClothes():
     def findWeightsAndDistances(self):
         for vertexMatch in self.vertexMatches:
             if not vertexMatch.exactMatch:
-                # TODO: Figure out what the weights actually mean
-                vertexMatch.setWeights(0.333, 0.333, 0.334)
+                # TODO:    It would probably be more efficient to do all this by building a numpy array
+                # TODO:    and applying all transformations on that
+
+                # The following algorithm calculates the distances between a vertex point (on the clothes)
+                # and the three vertices (on the human) that have previously been found to be closest.
+                # It then calculates weights based on how large a percentage of the total distance each
+                # distance encompass. 
+                #
+                # Unfortunately, the algorithm produces disappointing results. As of now, it is unclear
+                # if the problem is the chosen vertices, or the approach for calculating the weights.
+
+                v1 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[0]]
+                v2 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[1]]
+                v3 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[2]]
+                
+                x = vertexMatch.x
+                y = vertexMatch.y
+                z = vertexMatch.z
+                
+                # Squared distances for vertex 1
+                x1d = (x - v1[0]) * (x - v1[0])
+                y1d = (y - v1[1]) * (y - v1[1])
+                z1d = (z - v1[2]) * (z - v1[2])
+
+                # Squared distances for vertex 2
+                x2d = (x - v2[0]) * (x - v2[0])
+                y2d = (y - v2[1]) * (y - v2[1])
+                z2d = (z - v2[2]) * (z - v2[2])
+
+                # Squared distances for vertex 3
+                x3d = (x - v3[0]) * (x - v3[0])
+                y3d = (y - v3[1]) * (y - v3[1])
+                z3d = (z - v3[2]) * (z - v3[2])
+
+                # Euclidian distances
+                d1 = math.sqrt(x1d + y1d + z1d)
+                d2 = math.sqrt(x2d + y2d + z2d)
+                d3 = math.sqrt(x3d + y3d + z3d)
+
+                # Sum of distances
+                ds = d1 + d2 + d3
+
+                # Just a safeguard against division of zero
+                if ds < 0.00001:
+                    ds = 0.00001
+
+                # Distances as fractions of total distance, aka weights
+                w1 = d1 / ds
+                w2 = d2 / ds
+                w3 = d3 / ds
+
+                vertexMatch.setWeights(w1, w2, w3)
 
         for vertexMatch in self.vertexMatches:
             distance = [0,0,0]
             if not vertexMatch.exactMatch:
                 v1 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[0]]
-                v2 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[0]]
-                v3 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[0]]
+                v2 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[1]]
+                v3 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[2]]
 
                 w1 = vertexMatch.weights[0]
                 w2 = vertexMatch.weights[1]
