@@ -1,4 +1,5 @@
 from .mhmesh import MHMesh
+from .material import MHMaterial
 import math, re, os, uuid
 
 class _VertexMatch():
@@ -190,7 +191,7 @@ class MakeClothes():
                 f.write("\n")
 
     def writeMhMat(self):
-        # TODO: This just writes a white dummy material for now
+        mhmat = MHMaterial(self.clothesObj)
         outputFile = os.path.join(self.dirName,self.cleanedName + ".mhmat")
         with open(outputFile,"w") as f:
             f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
@@ -199,21 +200,10 @@ class MakeClothes():
             f.write("name " + self.exportName + " material\n\n")
 
             f.write("// Color shading attributes\n")
-            f.write("diffuseColor  0.64 0.64 0.64\n")
-            f.write("specularColor  0.5 0.5 0.5\n")
-            f.write("shininess 0\n")
+            f.write("diffuseColor  %.4f %.4f %.4f\n" % (mhmat.diffuseColor[0], mhmat.diffuseColor[1], mhmat.diffuseColor[2]))
+            f.write("specularColor  0.8 0.8 0.8\n")
+            f.write("shininess %.4f\n" % mhmat.shininess)
             f.write("opacity 1\n\n")
 
             f.write("// Textures and properties\n\n")
-
-            f.write("// Shader programme\n")
-            f.write("shader data/shaders/glsl/phong\n\n")
-
-            f.write("// Configure built-in shader defines\n")
-            f.write("shaderConfig diffuse true\n")
-            f.write("shaderConfig bump false\n")
-            f.write("shaderConfig normal  false\n")
-            f.write("shaderConfig displacement  false\n")
-            f.write("shaderConfig spec  true\n")
-            f.write("shaderConfig vertexColors false\n")
 
