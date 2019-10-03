@@ -20,7 +20,13 @@ class MHMaterial:
             if len(obj.data.materials) > 0:
                 # Only take first material into account
                 self._blenderMaterial = obj.data.materials[0]
-                self._parseNodeTree(self._blenderMaterial.node_tree)
+
+                if not hasattr(self._blenderMaterial, "node_tree") or not hasattr(self._blenderMaterial.node_tree, "nodes"):
+                    # TODO: We have a old blender-internal material without nodes. Should write a separate routine for this.
+                    pass
+                else:
+                    # We have a cycles/eevee material, or a blender-internal material with nodes
+                    self._parseNodeTree(self._blenderMaterial.node_tree)
 
     def _parseNodeTree(self, nodes):
         # Assume there is a principled node to which everything else
