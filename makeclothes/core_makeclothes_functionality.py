@@ -51,8 +51,8 @@ class _VertexMatch():
             dy = self.distance[1]
             dz = self.distance[2]
 
-            # MakeHuman order is XZY
-            return "%d %d %d %.4f %.4f %.4f %.4f %.4f %.4f" % (v1, v2, v3, w1, w2, w3, dx, dz, dy)
+            # Somewhat confusingly, order is here XYZ while normal MakeHuman order is XZY
+            return "%d %d %d %.4f %.4f %.4f %.4f %.4f %.4f" % (v1, v2, v3, w1, w2, w3, dx, dy, dz)
         else:
             return str(self.exactMatch)
 
@@ -111,7 +111,7 @@ class MakeClothes():
                 # The following algorithm calculates the distances between a vertex point (on the clothes)
                 # and the three vertices (on the human) that have previously been found to be closest.
                 # It then calculates weights based on how large a percentage of the total distance each
-                # distance encompass. 
+                # distance encompass.
                 #
                 # Unfortunately, the algorithm produces disappointing results. As of now, it is unclear
                 # if the problem is the chosen vertices, or the approach for calculating the weights.
@@ -176,9 +176,9 @@ class MakeClothes():
                 medianPoint[1] = (v1[1] * w1) + (v2[1] * w2) + (v3[1] * w3)
                 medianPoint[2] = (v1[2] * w1) + (v2[2] * w2) + (v3[2] * w3)
 
-                distance[0] = abs(vertexMatch.x - medianPoint[0])
-                distance[1] = abs(vertexMatch.y - medianPoint[1])
-                distance[2] = abs(vertexMatch.z - medianPoint[2])
+                distance[0] = vertexMatch.x - medianPoint[0]
+                distance[1] = vertexMatch.y - medianPoint[1]
+                distance[2] = vertexMatch.z - medianPoint[2]
             vertexMatch.distance = distance
 
     def setupTargetDirectory(self):
