@@ -128,8 +128,8 @@ class MHMesh:
                 #
                 if size > 0:
                     kd = mathutils.kdtree.KDTree(size)
-                    for i, vertex in enumerate(tmp_varray):
-                        kd.insert(vertex.co, i)
+                    for vertex in tmp_varray:
+                        kd.insert(vertex.co, vertex.index)
                     kd.balance()
                     return (kd)
 
