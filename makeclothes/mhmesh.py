@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import numpy, pprint
+import numpy, pprint, mathutils
 
 class MHMesh:
 
@@ -102,6 +102,38 @@ class MHMesh:
         print("Could not find vertex group " + vertexGroupName + " in this mesh. Available names are:")
         print(self.vertexGroupNames)
         return None
+
+    def vertexGroupKDTree(self, vertexGroupName):
+        obj = self.obj
+
+        #
+        # first find the group
+        for group in obj.vertex_groups:
+            if group.name == vertexGroupName:
+                #
+                # now find all vertices belonging to the group, we first need size of the KDTree
+                # we append all vertex numbers to a temporary array, so that we don't have to do the work twice
+                #
+                print ("Found group" + vertexGroupName)
+                tmp_varray = []
+                groupIndex = group.index
+                for vertex in obj.data.vertices:
+                        for vgroup in vertex.groups:
+                            if groupIndex == vgroup.group:
+                                tmp_varray.append(vertex)
+
+                size = len(tmp_varray)
+
+                # in case we have elements create the kd-tree and balance it
+                #
+                if size > 0:
+                    kd = mathutils.kdtree.KDTree(size)
+                    for i, vertex in enumerate(tmp_varray):
+                        kd.insert(vertex.co, i)
+                    kd.balance()
+                    return (kd)
+
+        return False
 
     def getDistanceArray(self, vertexGroupName, x, y, z):
         """

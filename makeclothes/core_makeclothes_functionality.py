@@ -86,21 +86,52 @@ class MakeClothes():
             clothesVertices = self.clothesmesh.vertexGroupVertices[vgroupIdx]
             vertexIndexMap = self.clothesmesh.vertexGroupVertexIndexMap[vgroupIdx]
 
+            kdtree = self.humanmesh.vertexGroupKDTree(vgroupName)  # this function I defined in mhmesh.py
             i = 0
-            for vertex in clothesVertices:
-                vertexMatch = _VertexMatch(vertexIndexMap[i], vertex[0], vertex[1], vertex[2]) # idx x y z
-                exact = self.humanmesh.getVertexAtExactLocation(vgroupName, vertex[0], vertex[1], vertex[2])
-                if not exact is None:
-                    vertexMatch.markExact(exact)
-                else:
-                    closest = self.humanmesh.findClosestThreeVertices(vgroupName, vertex[0], vertex[1], vertex[2])
-                    vertexMatch.setClosestIndices(closest[0], closest[1], closest[2])
+            if type(kdtree) is not bool:
+                print(type(kdtree))  # well that's one method to only allow a tree, maybe not the best, error treatment should look different :P
+
+                for vertex in clothesVertices:
+
+                    # Find the closest 3 vertices, we consider 0.0001 as an exact match
+                    vertexMatch = _VertexMatch(vertexIndexMap[i], vertex[0], vertex[1], vertex[2])  # idx x y z
                     hCoord = []
-                    hCoord.append(self.humanmesh.allVertexCoordinates[closest[0]])
-                    hCoord.append(self.humanmesh.allVertexCoordinates[closest[1]])
-                    hCoord.append(self.humanmesh.allVertexCoordinates[closest[2]])
-                    vertexMatch.closestHumanVertexCoordinates = hCoord
-                self.vertexMatches.append(vertexMatch)
+                    j = 0
+                    exact = False
+                    for (co, index, dist) in kdtree.find_n(vertex, 3):
+                        # print("    ", co, index, dist)
+                        if dist < 0.0001:
+                            vertexMatch.markExact(index)
+                            exact = True
+                        elif exact is False:
+                            vertexMatch.closestHumanVertexIndices[j] = index
+                            hCoord.append(self.humanmesh.allVertexCoordinates[index])
+                            j += 1
+                    if exact is False:
+                        vertexMatch.closestHumanVertexCoordinates = hCoord
+                    self.vertexMatches.append(vertexMatch)
+
+    # def findClosestVertices(self):
+    #     for vgroupIdx in self.clothesmesh.vertexGroupNames.keys():
+    #         vgroupName = self.clothesmesh.vertexGroupNames[vgroupIdx]
+    #         clothesVertices = self.clothesmesh.vertexGroupVertices[vgroupIdx]
+    #         vertexIndexMap = self.clothesmesh.vertexGroupVertexIndexMap[vgroupIdx]
+    #
+    #         i = 0
+    #         for vertex in clothesVertices:
+    #             vertexMatch = _VertexMatch(vertexIndexMap[i], vertex[0], vertex[1], vertex[2]) # idx x y z
+    #             exact = self.humanmesh.getVertexAtExactLocation(vgroupName, vertex[0], vertex[1], vertex[2])
+    #             if not exact is None:
+    #                 vertexMatch.markExact(exact)
+    #             else:
+    #                 closest = self.humanmesh.findClosestThreeVertices(vgroupName, vertex[0], vertex[1], vertex[2])
+    #                 vertexMatch.setClosestIndices(closest[0], closest[1], closest[2])
+    #                 hCoord = []
+    #                 hCoord.append(self.humanmesh.allVertexCoordinates[closest[0]])
+    #                 hCoord.append(self.humanmesh.allVertexCoordinates[closest[1]])
+    #                 hCoord.append(self.humanmesh.allVertexCoordinates[closest[2]])
+    #                 vertexMatch.closestHumanVertexCoordinates = hCoord
+    #             self.vertexMatches.append(vertexMatch)
 
     def findWeightsAndDistances(self):
         for vertexMatch in self.vertexMatches:
