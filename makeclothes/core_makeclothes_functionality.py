@@ -80,6 +80,10 @@ class MakeClothes():
         self.writeObj()
         self.writeMhMat()
 
+        if True:
+            self.writeDebug()
+            self.selectHumanVertices()
+
     def findClosestVertices(self):
         for vgroupIdx in self.clothesmesh.vertexGroupNames.keys():
             vgroupName = self.clothesmesh.vertexGroupNames[vgroupIdx]
@@ -105,6 +109,7 @@ class MakeClothes():
                             exact = True
                         elif exact is False:
                             vertexMatch.closestHumanVertexIndices[j] = index
+                            vertexMatch.closestHumanVertexCoordinates[j] = co
                             hCoord.append(self.humanmesh.allVertexCoordinates[index])
                             j += 1
                     if exact is False:
@@ -218,6 +223,60 @@ class MakeClothes():
         self.dirName = os.path.join(self.exportRoot,cleanedName)
         if not os.path.exists(self.dirName):
             os.makedirs(self.dirName)
+
+    def _distance(self, co1, co2):
+        xd = co1[0] - co2[0]
+        yd = co1[1] - co2[1]
+        zd = co1[2] - co2[2]
+        x2 = xd * xd
+        y2 = yd * yd
+        z2 = zd * zd
+        return math.sqrt(x2+y2+z2)
+
+    def writeDebug(self):
+        outputFile = os.path.join(self.dirName, self.cleanedName + ".debug.csv")
+        with open(outputFile, "w") as f:
+            f.write("clothesIdx,clVertX,clVertY,clVertZ,hIdx1,hVert1x,hVert1y,hVert1z,dist1,hIdx2,hVert2x,hVert2y,hVert2z,dist2,hIdx3,hVert3x,hVert3y,hVert3z,dist3,sumdist,dist1pct,dist2pct,dist3pct,medianX,medianY,medianZ,medianDist\n")
+            for vm in self.vertexMatches:
+
+                if not vm.exactMatch: # No need to debug exact matches
+                    f.write("%d,%.4f,%.4f,%.4f" % (vm.index, vm.x, vm.y, vm.z)) # clothes
+                    sumdist = 0.0
+                    dist = [0.0, 0.0, 0.0]
+                    mx = 0.0
+                    my = 0.0
+                    mz = 0.0
+                    for i in [0,1,2]:
+                        idx = vm.closestHumanVertexIndices[i]
+                        co = vm.closestHumanVertexCoordinates[i]
+                        dist[i] = self._distance([vm.x,vm.y,vm.z],co)
+                        sumdist = sumdist + dist[i]
+                        f.write(",%d,%.4f,%.4f,%.4f,%.4f" % (idx,co[0],co[1],co[2],dist[i])) # human
+                        mx = mx + co[0]
+                        my = my + co[1]
+                        mz = mz + co[2]
+
+                    f.write(",%.4f" % sumdist)
+
+                    for i in [0, 1, 2]:
+                        dpct = dist[i] / sumdist
+                        f.write(",%.4f" % dpct) # vert distance as fraction of total distance, ie vertex weight
+
+                    mx = mx * (dist[0] / sumdist)
+                    my = my * (dist[1] / sumdist)
+                    mz = mz * (dist[1] / sumdist)
+                    f.write(",%.4f,%.4f,%.4f" % (mx, my, mz)) # median point of human vertices, shifted by weights
+
+                    medianDistance = self._distance([mx,my,mz],[vm.x,vm.y,vm.z])
+                    f.write(",%.4f\n" % medianDistance) # distance between median point and clothes vertex
+
+    def selectHumanVertices(self):
+        for vm in self.vertexMatches:
+            if not vm.exactMatch:
+                for i in [0, 1, 2]:
+                    idx = vm.closestHumanVertexIndices[i]
+                    self.humanObj.data.vertices[idx].select = True
+
 
     def writeMhClo(self):
         outputFile = os.path.join(self.dirName,self.cleanedName + ".mhclo")
