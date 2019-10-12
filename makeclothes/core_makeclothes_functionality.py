@@ -139,14 +139,13 @@ class MakeClothes():
                 print(type(kdtree))  # well that's one method to only allow a tree, maybe not the best, error treatment should look different :P
 
                 for vertex in clothesVertices:
-
                     # Find the closest 3 vertices, we consider 0.0001 as an exact match
-                    vertexMatch = _VertexMatch(vertexIndexMap[i], vertex[0], vertex[1], vertex[2])  # idx x y z
+                    vertexMatch = _VertexMatch(i, vertex[0], vertex[1], vertex[2])  # idx x y z
+                    i = i + 1
                     hCoord = []
                     j = 0
                     exact = False
                     for (co, index, dist) in kdtree.find_n(vertex, 3):
-                        # print("    ", co, index, dist)
                         if dist < 0.0001:
                             vertexMatch.markExact(index)
                             exact = True
