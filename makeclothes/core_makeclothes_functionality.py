@@ -336,39 +336,41 @@ class MakeClothes():
     def writeDebug(self):
         outputFile = os.path.join(self.dirName, self.cleanedName + ".debug.csv")
         with open(outputFile, "w") as f:
-            f.write("clothesIdx,clVertX,clVertY,clVertZ,hIdx1,hVert1x,hVert1y,hVert1z,dist1,hIdx2,hVert2x,hVert2y,hVert2z,dist2,hIdx3,hVert3x,hVert3y,hVert3z,dist3,sumdist,dist1pct,dist2pct,dist3pct,medianX,medianY,medianZ,medianDist\n")
+            f.write("clothesIdx,clVertX,clVertY,clVertZ,hIdx1,hVert1x,hVert1y,hVert1z,dist1,hIdx2,hVert2x,hVert2y,hVert2z,dist2,hIdx3,hVert3x,hVert3y,hVert3z,dist3,sumdist,dist1pct,dist2pct,dist3pct,medianX,medianY,medianZ,medDistX,medDistY,medDistZ\n")
             for vm in self.vertexMatches:
 
                 if not vm.exactMatch: # No need to debug exact matches
                     f.write("%d,%.4f,%.4f,%.4f" % (vm.index, vm.x, vm.y, vm.z)) # clothes
                     sumdist = 0.0
                     dist = [0.0, 0.0, 0.0]
-                    mx = 0.0
-                    my = 0.0
-                    mz = 0.0
                     for i in [0,1,2]:
                         idx = vm.closestHumanVertexIndices[i]
                         co = vm.closestHumanVertexCoordinates[i]
                         dist[i] = _distance([vm.x,vm.y,vm.z],co)
                         sumdist = sumdist + dist[i]
                         f.write(",%d,%.4f,%.4f,%.4f,%.4f" % (idx,co[0],co[1],co[2],dist[i])) # human
-                        mx = mx + co[0]
-                        my = my + co[1]
-                        mz = mz + co[2]
 
                     f.write(",%.4f" % sumdist)
 
+                    dpct = [0,0,0]
+                    xMedian = 0
+                    yMedian = 0
+                    zMedian = 0
                     for i in [0, 1, 2]:
-                        dpct = dist[i] / sumdist
-                        f.write(",%.4f" % dpct) # vert distance as fraction of total distance, ie vertex weight
+                        dpct[i] = dist[i] / sumdist
+                        co = vm.closestHumanVertexCoordinates[i]
+                        xMedian = xMedian + co[0] * dpct[i]
+                        yMedian = yMedian + co[1] * dpct[i]
+                        zMedian = zMedian + co[2] * dpct[i]
+                        f.write(",%.4f" % dpct[i]) # vert distance as fraction of total distance, ie vertex weight
 
-                    mx = mx * (dist[0] / sumdist)
-                    my = my * (dist[1] / sumdist)
-                    mz = mz * (dist[1] / sumdist)
-                    f.write(",%.4f,%.4f,%.4f" % (mx, my, mz)) # median point of human vertices, shifted by weights
+                    f.write(",%.4f,%.4f,%.4f" % (xMedian, yMedian, zMedian)) # median point of human vertices, shifted by weights
 
-                    medianDistance = _distance([mx,my,mz],[vm.x,vm.y,vm.z])
-                    f.write(",%.4f\n" % medianDistance) # distance between median point and clothes vertex
+                    medDistX = vm.x - xMedian
+                    medDistY = vm.y - yMedian
+                    medDistZ = vm.z - zMedian
+
+                    f.write(",%.4f,%.4f,%.4f\n" % (medDistX, medDistY, medDistZ)) # distance between median point and clothes vertex
 
     def selectHumanVertices(self):
         for vm in self.vertexMatches:
