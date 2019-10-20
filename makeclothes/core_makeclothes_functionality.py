@@ -1,6 +1,8 @@
 from .mhmesh import MHMesh
 from .material import MHMaterial
 import math, re, os, uuid
+import mathutils
+from mathutils import Vector
 
 
 def _distance(co1, co2):
@@ -224,107 +226,91 @@ class MakeClothes():
                 vm.closestHumanVertexIndices = vIdxs
                 vm.closestHumanVertexCoordinates = vCos
 
-
-    # def findClosestVertices(self):
-    #     for vgroupIdx in self.clothesmesh.vertexGroupNames.keys():
-    #         vgroupName = self.clothesmesh.vertexGroupNames[vgroupIdx]
-    #         clothesVertices = self.clothesmesh.vertexGroupVertices[vgroupIdx]
-    #         vertexIndexMap = self.clothesmesh.vertexGroupVertexIndexMap[vgroupIdx]
-    #
-    #         i = 0
-    #         for vertex in clothesVertices:
-    #             vertexMatch = _VertexMatch(vertexIndexMap[i], vertex[0], vertex[1], vertex[2]) # idx x y z
-    #             exact = self.humanmesh.getVertexAtExactLocation(vgroupName, vertex[0], vertex[1], vertex[2])
-    #             if not exact is None:
-    #                 vertexMatch.markExact(exact)
-    #             else:
-    #                 closest = self.humanmesh.findClosestThreeVertices(vgroupName, vertex[0], vertex[1], vertex[2])
-    #                 vertexMatch.setClosestIndices(closest[0], closest[1], closest[2])
-    #                 hCoord = []
-    #                 hCoord.append(self.humanmesh.allVertexCoordinates[closest[0]])
-    #                 hCoord.append(self.humanmesh.allVertexCoordinates[closest[1]])
-    #                 hCoord.append(self.humanmesh.allVertexCoordinates[closest[2]])
-    #                 vertexMatch.closestHumanVertexCoordinates = hCoord
-    #             self.vertexMatches.append(vertexMatch)
-
     def findWeightsAndDistances(self):
         for vertexMatch in self.vertexMatches:
             if not vertexMatch.exactMatch:
-                # TODO:    It would probably be more efficient to do all this by building a numpy array
-                # TODO:    and applying all transformations on that
+                # TODO: the algorithm has to be improved further, especially the barycentrics are not
+                #       100% okay because of the projection, I guess
 
-                # The following algorithm calculates the distances between a vertex point (on the clothes)
-                # and the three vertices (on the human) that have previously been found to be closest.
-                # It then calculates weights based on how large a percentage of the total distance each
-                # distance encompass.
+                # To make the algorithm understandable I change our 3 vertices to triangle ABC and use Blender
+                # Vectors to be able to use internal functions like cross, dot, normal whatever you need
+                # All vectors I use with only one capital letter, reading is simplified imho
+
+                A = Vector(self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[0]])
+                B = Vector(self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[1]])
+                C = Vector(self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[2]])
+
+                # We need the normal for this triangle. Normally it is calculated with cross-product using the
+                # distance of e.g. B-A and C-A, but blender has a function implemented for that
+
+                N= mathutils.geometry.normal (A, B, C)
+                # print ("normal vector is " + str(N))
+
+                # The vertex on the clothes is the Vector Q
+                Q = Vector(( vertexMatch.x, vertexMatch.y, vertexMatch.z))
+
+                # calculate the vector I (intersection) where the line given by two Vectors and plane intersect
+                # (N is the direction of the normal-vector), Blender has a internal function for that
                 #
-                # Unfortunately, the algorithm produces disappointing results. As of now, it is unclear
-                # if the problem is the chosen vertices, or the approach for calculating the weights.
+                I = mathutils.geometry.intersect_line_plane(Q -20 * N, Q+20*N, A, N)
+                # print ("intersection is " + str(I))
 
-                v1 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[0]]
-                v2 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[1]]
-                v3 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[2]]
-                
-                x = vertexMatch.x
-                y = vertexMatch.y
-                z = vertexMatch.z
-                
-                # Squared distances for vertex 1
-                x1d = (x - v1[0]) * (x - v1[0])
-                y1d = (y - v1[1]) * (y - v1[1])
-                z1d = (z - v1[2]) * (z - v1[2])
 
-                # Squared distances for vertex 2
-                x2d = (x - v2[0]) * (x - v2[0])
-                y2d = (y - v2[1]) * (y - v2[1])
-                z2d = (z - v2[2]) * (z - v2[2])
+                # now calculate projection by simply neglecting the smallest dimension of the
+                # normal vector
+                NAbs = [abs(N[0]), abs(N[1]), abs(N[2])]
 
-                # Squared distances for vertex 3
-                x3d = (x - v3[0]) * (x - v3[0])
-                y3d = (y - v3[1]) * (y - v3[1])
-                z3d = (z - v3[2]) * (z - v3[2])
+                sv = NAbs[0]
+                px = 1
+                py = 2
+                if ( NAbs[1] < sv):
+                    sv = NAbs[1]
+                    px = 0
+                    py = 2
+                if ( NAbs[2] < sv):
+                    px = 0
+                    py = 1
 
-                # Euclidian distances
-                d1 = math.sqrt(x1d + y1d + z1d)
-                d2 = math.sqrt(x2d + y2d + z2d)
-                d3 = math.sqrt(x3d + y3d + z3d)
+                # print ("using plane " + str(px) + " " + str(py))
 
-                # Sum of distances
-                ds = d1 + d2 + d3
+                # we need the barycentic coordinates of I
+                # calculate barycentric values (weights) using our projection, triangle ABC
+                # WeightA = ((By - Cy) (Ix-Cx) + (Cx-Bx)(Iy-Cy)) / ((By-Cy)(Ax-Cx) + (Cx-Bx)(Ay-Cy))
+                # WeightB = ((By - Ay) (Ix-Cx) + (Ax-Bx)(Iy-Cy)) / ((By-Cy)(Ax-Cx) + (Cx-Bx)(Ay-Cy))
+                # WeightC = 1 - WeightA - WeightB
+                #
+                # pre calculate everything we need more than one time
 
-                # Just a safeguard against division of zero
-                if ds < 0.00001:
-                    ds = 0.00001
+                abx = A[px]-B[px]
+                acx = A[px]-C[px]
+                acy = A[py]-C[py]
+                bay = B[py]-A[py]
+                bcy = B[py]-C[py]
+                cbx = C[px]-B[px]
+                icx = I[px]-C[px]
+                icy = I[py]-C[py]
 
-                # Distances as fractions of total distance, aka weights
-                w1 = d1 / ds
-                w2 = d2 / ds
-                w3 = d3 / ds
+                # evaluate divisor (which is the same in both cases, it is also the determinant)
+                dT = bcy * acx + cbx * acy
 
-                vertexMatch.setWeights(w1, w2, w3)
+                # evaluate weights
+                wa = (bcy * icx + cbx * icy) / dT
+                wb = (bay * icx + abx * icy) / dT
+                wc = 1 - wa - wb
 
-        for vertexMatch in self.vertexMatches:
-            distance = [0,0,0]
-            if not vertexMatch.exactMatch:
-                v1 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[0]]
-                v2 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[1]]
-                v3 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[2]]
+                #if wa < 0 or wb < 0 or wc < 0:
+                #   print ("outside")
+                #print (wa, wb, wc)
 
-                w1 = vertexMatch.weights[0]
-                w2 = vertexMatch.weights[1]
-                w3 = vertexMatch.weights[2]
+                # calculate the distance with the weighted vectors and subtract that result from our point Q
+                D = Q - (wa * A + wb * B + wc * C)
 
-                medianPoint = [0.0, 0.0, 0.0]
-
-                # X for median point is (vert1 x * vert1 weight) + (vert2 x * vert2 weight) (vert3 x * vert3 weight)
-                medianPoint[0] = (v1[0] * w1) + (v2[0] * w2) + (v3[0] * w3)
-                medianPoint[1] = (v1[1] * w1) + (v2[1] * w2) + (v3[1] * w3)
-                medianPoint[2] = (v1[2] * w1) + (v2[2] * w2) + (v3[2] * w3)
-
-                distance[0] = vertexMatch.x - medianPoint[0]
-                distance[1] = vertexMatch.y - medianPoint[1]
-                distance[2] = vertexMatch.z - medianPoint[2]
-            vertexMatch.distance = distance
+                # add the values
+                vertexMatch.setWeights(wa, wb, wc)
+                vertexMatch.distance = [D[0], D[1], D[2] ]
+            else:
+                # for all exact values
+                vertexMatch.distance = [0,0,0]
 
     def setupTargetDirectory(self):
         cleanedName = re.sub(r'\s+',"_",self.exportName)
