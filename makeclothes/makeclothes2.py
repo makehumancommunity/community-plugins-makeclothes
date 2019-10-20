@@ -14,6 +14,7 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         scn = context.scene
+        obj = context.active_object
 
         setupBox = layout.box()
         setupBox.label(text="Setup clothes mesh", icon="MESH_DATA")
@@ -35,10 +36,16 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
 
         produceBox = layout.box()
         produceBox.label(text="Produce clothes", icon="MESH_DATA")
-        produceBox.label(text="Name")
-        produceBox.prop(scn, 'MhClothesName', text="")
-        produceBox.label(text="Description")
-        produceBox.prop(scn, 'MhClothesDesc', text="")
-        produceBox.label(text="License")
-        produceBox.prop(scn, 'MhClothesLicense', text="")
-        produceBox.operator("makeclothes.create_clothes", text="Make clothes")
+        if obj is None or obj.type != "MESH":
+            produceBox.label(text="- select a visible mesh object -")
+        else:
+            if obj.MhObjectType == "Basemesh":
+                produceBox.label(text="Selected mesh is marked as human")
+            else:
+                produceBox.label(text="Name")
+                produceBox.prop(obj, 'MhClothesName', text="")
+                produceBox.label(text="Description")
+                produceBox.prop(obj, 'MhClothesDesc', text="")
+                produceBox.label(text="License")
+                produceBox.prop(scn, 'MhClothesLicense', text="")
+                produceBox.operator("makeclothes.create_clothes", text="Make clothes")

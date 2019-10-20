@@ -78,8 +78,8 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
             return {'FINISHED'}
 
         rootDir = getClothesRoot()
-        name = context.scene.MhClothesName
-        desc = context.scene.MhClothesDesc
+        name = clothesObj.MhClothesName
+        desc = clothesObj.MhClothesDesc
         license = context.scene.MhClothesLicense
 
         MakeClothes(clothesObj, humanObj, exportName=name, exportRoot=rootDir, license=license, description=desc)
