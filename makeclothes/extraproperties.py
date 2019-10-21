@@ -39,6 +39,8 @@ def extraProperties():
         bpy.types.Object.MhClothesName = StringProperty(name="Cloth name", description="", default="newcloth")
     if not hasattr(bpy.types.Object, "MhClothesDesc"):
         bpy.types.Object.MhClothesDesc = StringProperty(name="Description", description="", default="no description")
+    if not hasattr(bpy.types.Object, "MhDeleteGroup"):
+        bpy.types.Object.MhDeleteGroup = StringProperty(name="Delete Group", description="", default="")
     if not hasattr(bpy.types.Object, "MhHuman"):
         bpy.types.Object.MhHuman = BoolProperty(name="Is MH Human", description="Old makeclothes property for deciding object type", default=False)
 

@@ -48,4 +48,6 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
                 produceBox.prop(obj, 'MhClothesDesc', text="")
                 produceBox.label(text="License")
                 produceBox.prop(scn, 'MhClothesLicense', text="")
+                produceBox.label(text="Delete-Group on Base-Mesh")
+                produceBox.prop(obj, 'MhDeleteGroup', text="")
                 produceBox.operator("makeclothes.create_clothes", text="Make clothes")

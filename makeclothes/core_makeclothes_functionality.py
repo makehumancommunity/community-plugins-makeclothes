@@ -112,10 +112,12 @@ class MakeClothes():
         self.exportRoot = exportRoot
         self.exportLicense = license
         self.exportDescription = description
+        self.deleteVerticesOutput = ""
 
         self.findClosestVertices()
         self.findBestFaces()
         self.findWeightsAndDistances()
+        self.evaluateDeleteVertices()
 
         self.dirName = None
         self.cleanedName = None
@@ -365,6 +367,50 @@ class MakeClothes():
                     idx = vm.closestHumanVertexIndices[i]
                     self.humanObj.data.vertices[idx].select = True
 
+    # for DeleteVertices test if the assigned delete-group is found on the human
+    # and collect vertices belonging to this group
+
+    def evaluateDeleteVertices(self):
+        deletegroup = self.clothesObj.MhDeleteGroup
+        lastindex = -2
+        cnt = 0
+        column = 0
+        if deletegroup != "":
+            vgrp = self.humanObj.vertex_groups
+
+            # get group index and check on human
+            #
+            if vgrp is not None and deletegroup in vgrp:
+
+                gindex = vgrp[deletegroup].index
+
+                for v in self.humanObj.data.vertices:
+                    for g in v.groups:
+
+                        # if the index of the group fits to the current group
+                        # print it as sequences when possible
+                        #
+                        if g.group == gindex:
+                            if lastindex + 1 != v.index:
+                                if cnt > 1:
+                                    self.deleteVerticesOutput += " - " + str(lastindex)
+
+                                # formating after 8 columns do a LF
+                                #
+                                column += 1
+                                if column > 8:
+                                    column = 0
+                                    self.deleteVerticesOutput += "\n"
+
+                                self.deleteVerticesOutput += " " + str(v.index)
+                                cnt = 1
+                            else:
+                                if lastindex < 0:
+                                    self.deleteVerticesOutput += str(v.index)
+                                cnt += 1
+                            lastindex = v.index
+                if cnt > 1:
+                    self.deleteVerticesOutput += " - " + str(lastindex)
 
     def writeMhClo(self):
         outputFile = os.path.join(self.dirName,self.cleanedName + ".mhclo")
@@ -380,7 +426,7 @@ class MakeClothes():
             f.write("material " + self.cleanedName + ".mhmat" + "\n\n")
             f.write("uuid " + str(uuid.uuid4()) + "\n")
             # TODO: Figure out what the scale values are for
-            f.write("# Settings: (I have no idea what the scale is derived from atm)\n")
+            f.write("# Settings: head vertices and distances\n")
             f.write("x_scale 5399 11998 1.4800\n")
             f.write("z_scale 962 5320 1.9221\n")
             f.write("y_scale 791 881 2.3298\n")
@@ -389,6 +435,11 @@ class MakeClothes():
             f.write("verts 0\n")
             for vm in self.vertexMatches:
                 f.write(str(vm) + "\n")
+
+            # write the delete vertice numbers of the basemesh
+            if self.deleteVerticesOutput != "":
+                f.write ("\ndelete_verts\n" + self.deleteVerticesOutput + "\n")
+
 
     def writeObj(self):
         # Yes, I'm aware there is a wavefront exporter in the blender API already. However, we need to make
