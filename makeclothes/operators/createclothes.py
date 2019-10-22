@@ -81,10 +81,10 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
         name = clothesObj.MhClothesName
         desc = clothesObj.MhClothesDesc
         license = context.scene.MhClothesLicense
+        author =  context.scene.MhClothesAuthor
 
-        MakeClothes(clothesObj, humanObj, exportName=name, exportRoot=rootDir, license=license, description=desc)
+        MakeClothes(clothesObj, humanObj, exportName=name, exportRoot=rootDir, license=license, author=author, description=desc)
 
         self.report({'INFO'}, "Clothes were written to " + os.path.join(rootDir,name))
         return {'FINISHED'}
-
 

@@ -102,7 +102,7 @@ class _FaceMatch():
 
 class MakeClothes():
 
-    def __init__(self, clothesObj, humanObj, exportName="clothes", exportRoot="/tmp", license="CC0", description="No description"):
+    def __init__(self, clothesObj, humanObj, exportName="clothes", exportRoot="/tmp", license="CC0", author="unknown", description="No description"):
         self.clothesObj = clothesObj
         self.humanObj = humanObj
         self.clothesmesh = MHMesh(clothesObj)
@@ -111,7 +111,11 @@ class MakeClothes():
         self.exportName = exportName
         self.exportRoot = exportRoot
         self.exportLicense = license
+        self.exportAuthor = author
         self.exportDescription = description
+
+        self.scales = [1.0, 1.0, 1.0]           # x_scale, y_scale, z_scale
+
         self.deleteVerticesOutput = ""
 
         self.findClosestVertices()
@@ -123,6 +127,17 @@ class MakeClothes():
         self.cleanedName = None
 
         self.setupTargetDirectory()
+
+        # TODO:
+        # step one as a simple dictionary, but will be put to configfile later, especially because it contains
+        # a lot of different values to select from, atm the head values are used.
+        #
+        self.minmax = { 'xmin': 5399, 'xmax': 11998, 'ymin': 791, 'ymax': 881, 'zmin': 962, 'zmax': 5320 }
+        #
+        self.scales[0] = self.humanmesh.getScale (self.minmax['xmin'], self.minmax['xmax'], 0)
+        self.scales[1] = self.humanmesh.getScale (self.minmax['ymin'], self.minmax['ymax'], 1)
+        self.scales[2] = self.humanmesh.getScale (self.minmax['zmin'], self.minmax['zmax'], 2)
+
         self.writeMhClo()
         self.writeObj()
         self.writeMhMat()
@@ -416,7 +431,7 @@ class MakeClothes():
         outputFile = os.path.join(self.dirName,self.cleanedName + ".mhclo")
         with open(outputFile,"w") as f:
             f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
-            f.write("# author: Unkown\n")
+            f.write("# author: "  + self.exportAuthor + "\n")
             f.write("# license: " + self.exportLicense + "\n#\n")
             f.write("# description: " + self.exportDescription + "\n#\n")
             f.write("basemesh hm08\n\n")
@@ -425,12 +440,10 @@ class MakeClothes():
             f.write("obj_file " + self.cleanedName + ".obj\n")
             f.write("material " + self.cleanedName + ".mhmat" + "\n\n")
             f.write("uuid " + str(uuid.uuid4()) + "\n")
-            # TODO: Figure out what the scale values are for
-            f.write("# Settings: head vertices and distances\n")
-            f.write("x_scale 5399 11998 1.4800\n")
-            f.write("z_scale 962 5320 1.9221\n")
-            f.write("y_scale 791 881 2.3298\n")
-            f.write("z_depth 50\n\n")
+            f.write("x_scale " + str(self.minmax['xmin']) + " " + str(self.minmax['xmax']) + " " + str(round(self.scales[0], 4)) + "\n")
+            f.write("y_scale " + str(self.minmax['ymin']) + " " + str(self.minmax['ymax']) + " " + str(round(self.scales[1], 4)) + "\n")
+            f.write("z_scale " + str(self.minmax['zmin']) + " " + str(self.minmax['zmax']) + " " + str(round(self.scales[2], 4)) + "\n")
+            f.write("z_depth " + str(self.clothesObj.MhZDepth) + "\n\n")
             f.write("# Vertex info:\n")
             f.write("verts 0\n")
             for vm in self.vertexMatches:
@@ -450,6 +463,7 @@ class MakeClothes():
         outputFile = os.path.join(self.dirName, self.cleanedName + ".obj")
         with open(outputFile,"w") as f:
             f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
+            f.write("# author: "  + self.exportAuthor + "\n")
             f.write("# license: " + self.exportLicense + "\n#\n")
             texCo = []
             for v in mesh.vertices:
@@ -474,7 +488,7 @@ class MakeClothes():
         outputFile = os.path.join(self.dirName,self.cleanedName + ".mhmat")
         with open(outputFile,"w") as f:
             f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
-            f.write("# author: Unkown\n")
+            f.write("# author: " + self.exportAuthor + "\n")
             f.write("# license: " + self.exportLicense + "\n#\n")
             f.write("name " + self.exportName + " material\n\n")
 
