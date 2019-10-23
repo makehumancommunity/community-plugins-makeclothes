@@ -1,5 +1,6 @@
 from .mhmesh import MHMesh
 from .material import MHMaterial
+import json
 import math, re, os, uuid
 import mathutils
 from mathutils import Vector
@@ -114,10 +115,15 @@ class MakeClothes():
         self.exportAuthor = author
         self.exportDescription = description
 
+        self.baseMeshType = "hm08"              # TODO must be flexible later, maybe "none" is possible, depends on additional information
+                                                # we have to supply for other meshes, but then we need presets for everything
+        self.bodyPart = "Head"                  # TODO must be flexible later
+
         self.scales = [1.0, 1.0, 1.0]           # x_scale, y_scale, z_scale
 
         self.deleteVerticesOutput = ""
 
+        self.getMeshInformation()    
         self.findClosestVertices()
         self.findBestFaces()
         self.findWeightsAndDistances()
@@ -128,15 +134,18 @@ class MakeClothes():
 
         self.setupTargetDirectory()
 
-        # TODO:
-        # step one as a simple dictionary, but will be put to configfile later, especially because it contains
-        # a lot of different values to select from, atm the head values are used.
+        # 
+        # get dimensions of the selected BodyPart
         #
-        self.minmax = { 'xmin': 5399, 'xmax': 11998, 'ymin': 791, 'ymax': 881, 'zmin': 962, 'zmax': 5320 }
-        #
-        self.scales[0] = self.humanmesh.getScale (self.minmax['xmin'], self.minmax['xmax'], 0)
-        self.scales[1] = self.humanmesh.getScale (self.minmax['ymin'], self.minmax['ymax'], 1)
-        self.scales[2] = self.humanmesh.getScale (self.minmax['zmin'], self.minmax['zmax'], 2)
+        dims = self.meshConfig["dimensions"][self.bodyPart]
+        self.minmax = {
+            'xmin': dims['xmin'], 'xmax': dims['xmax'],
+            'ymin': dims['ymin'], 'ymax': dims['ymax'],
+            'zmin': dims['zmin'], 'zmax': dims['zmax']
+        }
+        self.scales[0] = self.humanmesh.getScale (dims['xmin'], dims['xmax'], 0)
+        self.scales[1] = self.humanmesh.getScale (dims['ymin'], dims['ymax'], 1)
+        self.scales[2] = self.humanmesh.getScale (dims['zmin'], dims['zmax'], 2)
 
         self.writeMhClo()
         self.writeObj()
@@ -324,7 +333,7 @@ class MakeClothes():
 
                 # add the values
                 vertexMatch.setWeights(wa, wb, wc)
-                vertexMatch.distance = [D[0], D[1], D[2] ]
+                vertexMatch.distance = [D[0] * self.scales[0], D[1] * self.scales[1], D[2] * self.scales[2] ]
             else:
                 # for all exact values
                 vertexMatch.distance = [0,0,0]
@@ -335,6 +344,14 @@ class MakeClothes():
         self.dirName = os.path.join(self.exportRoot,cleanedName)
         if not os.path.exists(self.dirName):
             os.makedirs(self.dirName)
+
+    def getMeshInformation(self):
+        currentdir = os.path.dirname(__file__)
+        self.confName =  os.path.join(currentdir, "data", self.baseMeshType + ".config")
+        print ( self.confName)
+        cfile = open (self.confName, "r")
+        self.meshConfig = json.load(cfile)
+        cfile.close()
 
     def writeDebug(self):
         outputFile = os.path.join(self.dirName, self.cleanedName + ".debug.csv")
@@ -434,7 +451,7 @@ class MakeClothes():
             f.write("# author: "  + self.exportAuthor + "\n")
             f.write("# license: " + self.exportLicense + "\n#\n")
             f.write("# description: " + self.exportDescription + "\n#\n")
-            f.write("basemesh hm08\n\n")
+            f.write("basemesh " + self.baseMeshType + "\n\n")
             f.write("# Basic info:\n")
             f.write("name " + self.exportName + "\n")
             f.write("obj_file " + self.cleanedName + ".obj\n")
