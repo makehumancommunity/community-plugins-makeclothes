@@ -64,7 +64,8 @@ class _VertexMatch():
             dy = self.distance[1]
             dz = self.distance[2]
 
-            # Somewhat confusingly, order is here XYZ while normal MakeHuman order is XZY
+            # still not 100% clear, why it does work the best with normal order
+            #return "%d %d %d %.4f %.4f %.4f %.4f %.4f %.4f" % (v1, v2, v3, w1, w2, w3, dx, dz, -dy)
             return "%d %d %d %.4f %.4f %.4f %.4f %.4f %.4f" % (v1, v2, v3, w1, w2, w3, dx, dy, dz)
         else:
             return str(self.exactMatch)
@@ -260,7 +261,7 @@ class MakeClothes():
 
                 # To make the algorithm understandable I change our 3 vertices to triangle ABC and use Blender
                 # Vectors to be able to use internal functions like cross, dot, normal whatever you need
-                # All vectors I use with only one capital letter, reading is simplified imho
+                # For all vectors I use only capital letters, reading is simplified imho
 
                 A = Vector(self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[0]])
                 B = Vector(self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[1]])
@@ -275,58 +276,44 @@ class MakeClothes():
                 # The vertex on the clothes is the Vector Q
                 Q = Vector(( vertexMatch.x, vertexMatch.y, vertexMatch.z))
 
-                # calculate the vector I (intersection) where the line given by two Vectors and plane intersect
-                # (N is the direction of the normal-vector), Blender has a internal function for that
+                # transform normal vector to corner of triangle and recalculate length 
+                # new vector is R (direction is the same)
+                QA = Q - A
+                R = Q - N * QA.dot(N)
+
+                # now weight the triangle multiplied with the normal
+                # 
+                BA = B-A
+                BA.normalize()
+                NBA = N.cross(BA)
+                NBA.normalize()
+
+                AC = A-C
+                BC = B-C
+                RC = R-C
+
+                # we are using barycentric coordinates to determine the weights. Normally you have
+                # to do a projection. To get the values of all dimensions we can use the scalar or dot.product
+                # of our vectors. This is also called projection product ...
+                # the barycentric calculation now could be rewritten as
                 #
-                I = mathutils.geometry.intersect_line_plane(Q -20 * N, Q+20*N, A, N)
-                # print ("intersection is " + str(I))
-
-
-                # now calculate projection by simply neglecting the smallest dimension of the
-                # normal vector
-                NAbs = [abs(N[0]), abs(N[1]), abs(N[2])]
-
-                sv = NAbs[0]
-                px = 1
-                py = 2
-                if ( NAbs[1] < sv):
-                    sv = NAbs[1]
-                    px = 0
-                    py = 2
-                if ( NAbs[2] < sv):
-                    px = 0
-                    py = 1
-
-                # print ("using plane " + str(px) + " " + str(py))
-
-                # we need the barycentic coordinates of I
-                # calculate barycentric values (weights) using our projection, triangle ABC
-                # WeightA = ((By - Cy) (Ix-Cx) + (Cx-Bx)(Iy-Cy)) / ((By-Cy)(Ax-Cx) + (Cx-Bx)(Ay-Cy))
-                # WeightB = ((By - Ay) (Ix-Cx) + (Ax-Bx)(Iy-Cy)) / ((By-Cy)(Ax-Cx) + (Cx-Bx)(Ay-Cy))
+                # WeightA = ( BC.NBA * RC.BA - BC.BA * RC.NBA) / (BA.AC * BC.NBA - BC.AC * AC.NBA)
+                # WeightB = (-AC.NBA * RC.BA + AC.BA * RC.NBA) / (BA.AC * BC.NBA - BC.AC * AC.NBA)
+                #
                 # WeightC = 1 - WeightA - WeightB
-                #
-                # pre calculate everything we need more than one time
 
-                abx = A[px]-B[px]
-                acx = A[px]-C[px]
-                acy = A[py]-C[py]
-                bay = B[py]-A[py]
-                bcy = B[py]-C[py]
-                cbx = C[px]-B[px]
-                icx = I[px]-C[px]
-                icy = I[py]-C[py]
+                a00 = AC.dot(BA)
+                a01 = BC.dot(BA)
+                a10 = AC.dot(NBA)
+                a11 = BC.dot(NBA)
+                b0 = RC.dot(BA)
+                b1 = RC.dot(NBA)
 
-                # evaluate divisor (which is the same in both cases, it is also the determinant)
-                dT = bcy * acx + cbx * acy
+                det = a00*a11 - a01*a10
 
-                # evaluate weights
-                wa = (bcy * icx + cbx * icy) / dT
-                wb = (bay * icx + abx * icy) / dT
+                wa = (a11*b0 - a01*b1)/det
+                wb = (-a10*b0 + a00*b1)/det
                 wc = 1 - wa - wb
-
-                #if wa < 0 or wb < 0 or wc < 0:
-                #   print ("outside")
-                #print (wa, wb, wc)
 
                 # calculate the distance with the weighted vectors and subtract that result from our point Q
                 D = Q - (wa * A + wb * B + wc * C)
@@ -485,7 +472,7 @@ class MakeClothes():
             texCo = []
             for v in mesh.vertices:
                 # TODO: apply scale, origin
-                f.write("v %.4f %.4f %.4f\n" % v.co[:])
+                f.write("v %.4f %.4f %.4f\n" % (v.co[0], v.co[2], -v.co[1]))
                 texCo.append([0.0, 0.0])
             for face in mesh.polygons:
                 for vert_idx, loop_idx in zip(face.vertices, face.loop_indices):
@@ -493,7 +480,7 @@ class MakeClothes():
                     #f.write("# face idx: %i, vert idx: %i, uvs: %f, %f\n" % (face.index, vert_idx, uv_coords.x, uv_coords.y))
                     texCo[vert_idx] = [uv_coords.x, uv_coords.y]
             for uv in texCo:
-                f.write("vt " + str(uv[0]) + " " + str(uv[1]) + "\n")
+                f.write("vt %.4f %.4f\n" % (uv[0], uv[1]))
             for p in mesh.polygons:
                 f.write("f")
                 for i in p.vertices:
