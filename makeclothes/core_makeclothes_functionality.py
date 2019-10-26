@@ -64,9 +64,8 @@ class _VertexMatch():
             dy = self.distance[1]
             dz = self.distance[2]
 
-            # still not 100% clear, why it does work the best with normal order
-            #return "%d %d %d %.4f %.4f %.4f %.4f %.4f %.4f" % (v1, v2, v3, w1, w2, w3, dx, dz, -dy)
-            return "%d %d %d %.4f %.4f %.4f %.4f %.4f %.4f" % (v1, v2, v3, w1, w2, w3, dx, dy, dz)
+            # write distances dx, dy, dz according to makehuman order
+            return "%d %d %d %.4f %.4f %.4f %.4f %.4f %.4f" % (v1, v2, v3, w1, w2, w3, dx, dz, -dy)
         else:
             return str(self.exactMatch)
 
@@ -109,6 +108,7 @@ class MakeClothes():
         self.humanObj = humanObj
         self.clothesmesh = MHMesh(clothesObj)
         self.humanmesh = MHMesh(humanObj)
+
         self.vertexMatches = []
         self.exportName = exportName
         self.exportRoot = exportRoot
@@ -145,8 +145,8 @@ class MakeClothes():
             'zmin': dims['zmin'], 'zmax': dims['zmax']
         }
         self.scales[0] = self.humanmesh.getScale (dims['xmin'], dims['xmax'], 0)
-        self.scales[1] = self.humanmesh.getScale (dims['ymin'], dims['ymax'], 1)
-        self.scales[2] = self.humanmesh.getScale (dims['zmin'], dims['zmax'], 2)
+        self.scales[2] = self.humanmesh.getScale (dims['ymin'], dims['ymax'], 1) # scales-index
+        self.scales[1] = self.humanmesh.getScale (dims['zmin'], dims['zmax'], 2) # y and z are changed
 
         self.writeMhClo()
         self.writeObj()
@@ -166,7 +166,6 @@ class MakeClothes():
             i = 0
             if type(kdtree) is not bool:
                 print(type(kdtree))  # well that's one method to only allow a tree, maybe not the best, error treatment should look different :P
-
                 for vertex in clothesVertices:
                     # Find the closest 3 vertices, we consider 0.0001 as an exact match
                     vertexMatch = _VertexMatch(i, vertex[0], vertex[1], vertex[2])  # idx x y z
@@ -256,8 +255,7 @@ class MakeClothes():
     def findWeightsAndDistances(self):
         for vertexMatch in self.vertexMatches:
             if not vertexMatch.exactMatch:
-                # TODO: the algorithm has to be improved further, especially the barycentrics are not
-                #       100% okay because of the projection, I guess
+                # TODO: could be that further improvement like Thomas' mid vertex should be done
 
                 # To make the algorithm understandable I change our 3 vertices to triangle ABC and use Blender
                 # Vectors to be able to use internal functions like cross, dot, normal whatever you need

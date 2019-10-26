@@ -77,6 +77,15 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
             self.report({'ERROR'}, "There are vertex groups in the clothes object which do not exist in the human object. See console for more info.")
             return {'FINISHED'}
 
+        #
+        # apply all transformations on both objects, otherwise it is too hard
+        # to determine problems.
+        #
+        context.view_layer.objects.active = humanObj
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+        context.view_layer.objects.active = clothesObj
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
         rootDir = getClothesRoot()
         name = clothesObj.MhClothesName
         desc = clothesObj.MhClothesDesc
