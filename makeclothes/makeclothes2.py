@@ -31,8 +31,7 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
 
         checkBox = layout.box()
         checkBox.label(text="Check clothes", icon="MESH_DATA")
-        checkBox.operator("makeclothes.check_vertex_groups", text="Check vgroups")
-        checkBox.operator("makeclothes.check_faces", text="Check faces")
+        checkBox.operator("makeclothes.check_clothes", text="Check clothes")
 
         commonSettingsBox = layout.box()
         commonSettingsBox.label(text="Common settings", icon="PRESET")

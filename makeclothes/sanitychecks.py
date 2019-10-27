@@ -52,6 +52,29 @@ def checkAllVGroupsInFirstExistsInSecond(firstObj, secondObj):
 
 ### --- FACE CHECKS --- ###
 
+# if vertices belong to no faces at all it will also not work
+#
+def checkStrayVertices(obj):
+    verts = obj.data.vertices
+    facesfound = {}
+    for v in verts:
+        facesfound[v.index] = False
+    for faces in obj.data.polygons:
+        for vn in faces.vertices:
+            facesfound[vn] = True
+    info = ""
+    b = True
+    cnt = 0
+    for v in verts:
+        if not facesfound[v.index]:
+            b = False
+            cnt += 1
+            if cnt < 10:
+                info += " " + str(v.index)
+    if info != "":
+        info = "Stray verts:" + info
+    return (b, cnt, info);
+
 def checkFacesHaveAtMostFourVertices(obj):
     for polygon in obj.data.polygons:
         verts_in_face = polygon.vertices[:]
@@ -69,3 +92,19 @@ def checkFacesHaveTheSameNumberOfVertices(obj):
             if len(verts_in_face) != countToLookFor:
                 return False
     return True
+
+### --- UV MAP CHECKS --- ###
+
+def checkNumberOfUVMaps(obj):
+    uvlayers = obj.data.uv_layers
+    cnt = 0
+    if uvlayers:
+        for (index,layer) in enumerate(uvlayers.keys()):
+            cnt += 1
+    if cnt == 0:
+        return (False, cnt, "No texture possible.")
+    elif cnt == 1:
+        return (True, cnt, "")
+    else:
+        return (False, cnt, "Active map is: " + uvlayers.active.name)
+
