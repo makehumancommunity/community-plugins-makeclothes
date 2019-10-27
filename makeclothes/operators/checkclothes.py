@@ -54,7 +54,7 @@ class MHC_OT_CheckClothesOperator(bpy.types.Operator):
         if not checkHasAnyVGroups(obj):
             error += "This object does not have any vertex group.\nIt has to have at least one for MakeClothes to work.\n"
             icon = "\002"
-        info += icon + "At least one vertex groups are exists.\n"
+        info += icon + "At least one vertex group must exists.\n"
 
         icon = "\001"
         if not checkAllVerticesBelongToAVGroup(obj):
