@@ -24,57 +24,25 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
 
     def execute(self, context):
 
-        humanObj = None
+        (b, info, error) = checkSanityHuman(context)
+        if b:
+            bpy.ops.info.infobox('INVOKE_DEFAULT', title="Check Human", info=info, error=error)
+            return {'FINISHED'}
 
+        # since we tested the existence of a human above there is exactly one
+        #
+        humanObj = None
         for obj in context.scene.objects:
             if hasattr(obj, "MhObjectType"):
                 if obj.MhObjectType == "Basemesh":
-                    if humanObj is None:
-                        humanObj = obj
-                    else:
-                        self.report({'ERROR'}, "There are multiple human objects in this scene. To avoid errors, only use one.")
-                        return {'FINISHED'}
-
-        if humanObj is None:
-            self.report({'ERROR'}, "Could not find any human object in this scene.")
-            return {'FINISHED'}
-
-        if not checkHasAnyVGroups(humanObj):
-            self.report({'ERROR'}, "The human object does not have any vertex group. It has to have at least one for MakeClothes to work.")
-            return {'FINISHED'}
-
-        if not checkVertexGroupAssignmentsAreNotCorrupt(humanObj):
-            self.report({'ERROR'}, "The human object has vertices which belong non-existing vertex groups, see console for more info")
-            return {'FINISHED'}
+                    humanObj = obj
+                    break
 
         clothesObj = context.active_object
 
-        if not checkHasAnyVGroups(clothesObj):
-            self.report({'ERROR'}, "This object does not have any vertex group. It has to have at least one for MakeClothes to work.")
-            return {'FINISHED'}
-
-        if not checkAllVerticesBelongToAVGroup(clothesObj):
-            self.report({'ERROR'}, "This object has vertices which do not belong to a vertex group.")
-            return {'FINISHED'}
-
-        if not checkAllVerticesBelongToAtMostOneVGroup(clothesObj):
-            self.report({'ERROR'}, "This object has vertices which belong to multiple vertex groups")
-            return {'FINISHED'}
-
-        if not checkVertexGroupAssignmentsAreNotCorrupt(clothesObj):
-            self.report({'ERROR'}, "This object has vertices which belong non-existing vertex groups, see console for more info")
-            return {'FINISHED'}
-
-        if not checkFacesHaveAtMostFourVertices(clothesObj):
-            self.report({'ERROR'}, "This object has at least one face with more than four vertices. N-gons are not supported by MakeClothes.")
-            return {'FINISHED'}
-
-        if not checkFacesHaveTheSameNumberOfVertices(clothesObj):
-            self.report({'ERROR'}, "This object has faces with different numbers of vertices. Tris *or* quads are supported, but not a mix of the two.")
-            return {'FINISHED'}
-
-        if not checkAllVGroupsInFirstExistsInSecond(clothesObj, humanObj):
-            self.report({'ERROR'}, "There are vertex groups in the clothes object which do not exist in the human object. See console for more info.")
+        (b, info, error) = checkSanityClothes(clothesObj)
+        if b:
+            bpy.ops.info.infobox('INVOKE_DEFAULT', title="Check Clothes", info=info, error=error)
             return {'FINISHED'}
 
         #
@@ -85,6 +53,11 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
         context.view_layer.objects.active = clothesObj
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
+        #
+        # set mode to object, especially if you are still in edit mode
+        # (otherwise last changes are not used
+        bpy.ops.object.mode_set(mode='OBJECT')
 
         rootDir = getClothesRoot()
         name = clothesObj.MhClothesName
