@@ -16,11 +16,15 @@ def checkAllVerticesBelongToAVGroup(obj):
 def checkAllVerticesBelongToAtMostOneVGroup(obj):
     for vert in obj.data.vertices:
         if len(vert.groups) > 1:
-            print("Vertex with index " + str(vert.index) + " belongs to the following groups:")
+            vgroup_names = {vgroup.index: vgroup.name for vgroup in obj.vertex_groups}
+            hint = "Vertex with index " + str(vert.index) + " belongs to the following groups:\n"
+            grps = ""
             for group in vert.groups:
-                print(group)
-            return False
-    return True
+                if len(grps) > 0:
+                    grps += ", "
+                grps += vgroup_names[group.group]
+            return (False, hint + grps)
+    return (True, "")
 
 def checkVertexGroupAssignmentsAreNotCorrupt(obj):
     validIndices = []
@@ -29,9 +33,10 @@ def checkVertexGroupAssignmentsAreNotCorrupt(obj):
     for vert in obj.data.vertices:
         for group in vert.groups.keys():
             if not int(group) in validIndices:
-                print("Vertex with index " + str(vert.index) + " is assigned to a vertex group with index " + str(vert.groups[group]) + ", but that group does not exist")
-                return False
-    return True
+                hint = "Vertex with index " + str(vert.index) + " is assigned to a vertex group with index " + \
+                    str(vert.groups[group]) + ",\nbut that group does not exist\n"
+                return (False, hint)
+    return (True, "")
 
 def checkAllVGroupsInFirstExistsInSecond(firstObj, secondObj):
     firstObjVGroups = []
@@ -143,8 +148,9 @@ def checkSanityHuman(context):
     info += icon + "At least one vertex group is available.\n"
 
     icon = "\001"
-    if not checkVertexGroupAssignmentsAreNotCorrupt(humanObj):
-        error += "The human object has vertices which belong non-existing\nvertex groups, see console for more info.\n"
+    (b, hint) = checkVertexGroupAssignmentsAreNotCorrupt(humanObj)
+    if not b:
+        error += "The human object has vertices which belong non-existing\n" + hint
         icon = "\002"
     info += icon + "No vertex belongs to a non-existing group.\n"
     return (len(error) > 0, info, error)
@@ -195,14 +201,16 @@ def checkSanityClothes(obj):
     info += icon + "All vertices belong to a vertex group.\n"
 
     icon = "\001"
-    if not checkAllVerticesBelongToAtMostOneVGroup(obj):
-        error += "This object has vertices which belong to multiple vertex groups.\n"
+    (b, hint) = checkAllVerticesBelongToAtMostOneVGroup(obj)
+    if not b:
+        error += "This object has vertices which belong to multiple vertex groups.\n" + hint
         icon = "\002"
     info += icon + "No vertex belongs to multiple groups.\n"
 
     icon = "\001"
-    if not checkVertexGroupAssignmentsAreNotCorrupt(obj):
-        error += "This object has vertices which belong non-existing vertex groups,\nsee console for more info\n"
+    (b, hint) = checkVertexGroupAssignmentsAreNotCorrupt(obj)
+    if not b:
+        error += "This object has vertices which belong non-existing vertex groups,\n" + hint
         icon = "\002"
     info += icon + "No vertex is assigned to a non existing group.\n"
 
