@@ -135,6 +135,30 @@ class MHMesh:
 
         return False
 
+    #
+    # used to determine x,y,z scale of object
+    #
+    def getScale(self, num1, num2, dimension):
+        verts = self.obj.data.vertices
+
+        # in case we don't have the vertex numbers
+        # or distance is 0 return a value of 1
+        #
+        try:
+            coord1 = verts[num1].co
+        except:
+            return 1
+        try:
+            coord2 = verts[num2].co
+        except:
+            return 1
+        res = coord1 - coord2
+        val = res[dimension]
+        if val == 0:
+            return 1
+        else:
+            return abs(val)
+
     def getDistanceArray(self, vertexGroupName, x, y, z):
         """
         Return an array with distances between the xyz coordinate given and each vertex listed in the vertexCoordinates array.
@@ -254,4 +278,4 @@ class MHMesh:
         #print("The three smallest distances have the global indices: " + str(globalIndexes))
 
         return globalIndexes
-    
+

@@ -21,7 +21,7 @@ _extractGroupDescription = "You can create a new mesh based on a vertex group in
 
 _licenses = []
 _licenses.append(("CC0",   "CC0", "Creative Commons Zero",                                                  1))
-_licenses.append(("CC-BY", "CC0", "Creative Commons Attribution",                                           2))
+_licenses.append(("CC-BY", "CC-BY", "Creative Commons Attribution",                                           2))
 _licenses.append(("AGPL",  "AGPL", "Affero Gnu Public License (don't use unless absolutely necessary)",     3))
 _licenseDescription = "Set an output license for the clothes. This will have no practical effect apart from being included in the written MHCLO file."
 
@@ -29,14 +29,25 @@ _nameDescription = "This is the base name of all files and directories written. 
 _descDescription = "This is the description of the clothes. It has no function outside being included as a comment in the produced .mhclo file."
 
 def extraProperties():
+    #
+    # properties used by all clothes are added to the scene
+    #
     bpy.types.Scene.MhExtractClothes = bpy.props.EnumProperty(items=_extractGroup, name="extract_clothes", description=_extractGroupDescription, default="BODY")
     bpy.types.Scene.MhClothesLicense = bpy.props.EnumProperty(items=_licenses, name="clothes_license", description=_licenseDescription, default="CC0")
-    bpy.types.Scene.MhClothesName = StringProperty(name="Base name", description=_nameDescription, default="clothes")
-    bpy.types.Scene.MhClothesDesc = StringProperty(name="Description", description=_descDescription, default="My fancy clothes")
+    bpy.types.Scene.MhClothesAuthor  = StringProperty(name="Author name", description="", default="unknown")
 
     # Object properties, normally set by MPFB
     if not hasattr(bpy.types.Object, "MhObjectType"):
-        bpy.types.Object.MhObjectType = StringProperty(name="Object type", description="This is what type of MakeHuman object this is (such as Clothes, Eyes...)", default="")
+        bpy.types.Object.MhObjectType = StringProperty(name="Object type", description="This is what type of MakeHuman object is (such as Clothes, Eyes...)", default="")
+    if not hasattr(bpy.types.Object, "MhClothesName"):
+        bpy.types.Object.MhClothesName = StringProperty(name="Cloth name", description="Name of the piece of cloth. Also used to create the filename", default="newcloth")
+    if not hasattr(bpy.types.Object, "MhClothesDesc"):
+        bpy.types.Object.MhClothesDesc = StringProperty(name="Description", description="", default="no description")
+    if not hasattr(bpy.types.Object, "MhDeleteGroup"):
+        bpy.types.Object.MhDeleteGroup = StringProperty(name="Delete Group",
+                description="The group contains the vertices to be deleted on the human which are hidden by your piece of cloth", default="")
+    if not hasattr(bpy.types.Object, "MhZDepth"):
+        bpy.types.Object.MhZDepth = IntProperty(name="Z-Depth", description="", default=50)
     if not hasattr(bpy.types.Object, "MhHuman"):
         bpy.types.Object.MhHuman = BoolProperty(name="Is MH Human", description="Old makeclothes property for deciding object type", default=False)
 

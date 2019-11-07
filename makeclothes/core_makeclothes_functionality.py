@@ -1,6 +1,9 @@
 from .mhmesh import MHMesh
 from .material import MHMaterial
+import json
 import math, re, os, uuid
+import mathutils
+from mathutils import Vector
 
 
 def _distance(co1, co2):
@@ -61,8 +64,8 @@ class _VertexMatch():
             dy = self.distance[1]
             dz = self.distance[2]
 
-            # Somewhat confusingly, order is here XYZ while normal MakeHuman order is XZY
-            return "%d %d %d %.4f %.4f %.4f %.4f %.4f %.4f" % (v1, v2, v3, w1, w2, w3, dx, dy, dz)
+            # write distances dx, dy, dz according to makehuman order
+            return "%d %d %d %.4f %.4f %.4f %.4f %.4f %.4f" % (v1, v2, v3, w1, w2, w3, dx, dz, -dy)
         else:
             return str(self.exactMatch)
 
@@ -100,25 +103,51 @@ class _FaceMatch():
 
 class MakeClothes():
 
-    def __init__(self, clothesObj, humanObj, exportName="clothes", exportRoot="/tmp", license="CC0", description="No description"):
+    def __init__(self, clothesObj, humanObj, exportName="clothes", exportRoot="/tmp", license="CC0", author="unknown", description="No description"):
         self.clothesObj = clothesObj
         self.humanObj = humanObj
         self.clothesmesh = MHMesh(clothesObj)
         self.humanmesh = MHMesh(humanObj)
+
         self.vertexMatches = []
         self.exportName = exportName
         self.exportRoot = exportRoot
         self.exportLicense = license
+        self.exportAuthor = author
         self.exportDescription = description
 
+        self.baseMeshType = "hm08"              # TODO must be flexible later, maybe "none" is possible, depends on additional information
+                                                # we have to supply for other meshes, but then we need presets for everything
+        self.bodyPart = "Head"                  # TODO must be flexible later
+
+        self.scales = [1.0, 1.0, 1.0]           # x_scale, y_scale, z_scale
+
+        self.deleteVerticesOutput = ""
+
+        self.getMeshInformation()    
         self.findClosestVertices()
         self.findBestFaces()
         self.findWeightsAndDistances()
+        self.evaluateDeleteVertices()
 
         self.dirName = None
         self.cleanedName = None
 
         self.setupTargetDirectory()
+
+        # 
+        # get dimensions of the selected BodyPart
+        #
+        dims = self.meshConfig["dimensions"][self.bodyPart]
+        self.minmax = {
+            'xmin': dims['xmin'], 'xmax': dims['xmax'],
+            'ymin': dims['ymin'], 'ymax': dims['ymax'],
+            'zmin': dims['zmin'], 'zmax': dims['zmax']
+        }
+        self.scales[0] = self.humanmesh.getScale (dims['xmin'], dims['xmax'], 0)
+        self.scales[2] = self.humanmesh.getScale (dims['ymin'], dims['ymax'], 1) # scales-index
+        self.scales[1] = self.humanmesh.getScale (dims['zmin'], dims['zmax'], 2) # y and z are changed
+
         self.writeMhClo()
         self.writeObj()
         self.writeMhMat()
@@ -137,7 +166,6 @@ class MakeClothes():
             i = 0
             if type(kdtree) is not bool:
                 print(type(kdtree))  # well that's one method to only allow a tree, maybe not the best, error treatment should look different :P
-
                 for vertex in clothesVertices:
                     # Find the closest 3 vertices, we consider 0.0001 as an exact match
                     vertexMatch = _VertexMatch(i, vertex[0], vertex[1], vertex[2])  # idx x y z
@@ -224,107 +252,76 @@ class MakeClothes():
                 vm.closestHumanVertexIndices = vIdxs
                 vm.closestHumanVertexCoordinates = vCos
 
-
-    # def findClosestVertices(self):
-    #     for vgroupIdx in self.clothesmesh.vertexGroupNames.keys():
-    #         vgroupName = self.clothesmesh.vertexGroupNames[vgroupIdx]
-    #         clothesVertices = self.clothesmesh.vertexGroupVertices[vgroupIdx]
-    #         vertexIndexMap = self.clothesmesh.vertexGroupVertexIndexMap[vgroupIdx]
-    #
-    #         i = 0
-    #         for vertex in clothesVertices:
-    #             vertexMatch = _VertexMatch(vertexIndexMap[i], vertex[0], vertex[1], vertex[2]) # idx x y z
-    #             exact = self.humanmesh.getVertexAtExactLocation(vgroupName, vertex[0], vertex[1], vertex[2])
-    #             if not exact is None:
-    #                 vertexMatch.markExact(exact)
-    #             else:
-    #                 closest = self.humanmesh.findClosestThreeVertices(vgroupName, vertex[0], vertex[1], vertex[2])
-    #                 vertexMatch.setClosestIndices(closest[0], closest[1], closest[2])
-    #                 hCoord = []
-    #                 hCoord.append(self.humanmesh.allVertexCoordinates[closest[0]])
-    #                 hCoord.append(self.humanmesh.allVertexCoordinates[closest[1]])
-    #                 hCoord.append(self.humanmesh.allVertexCoordinates[closest[2]])
-    #                 vertexMatch.closestHumanVertexCoordinates = hCoord
-    #             self.vertexMatches.append(vertexMatch)
-
     def findWeightsAndDistances(self):
         for vertexMatch in self.vertexMatches:
             if not vertexMatch.exactMatch:
-                # TODO:    It would probably be more efficient to do all this by building a numpy array
-                # TODO:    and applying all transformations on that
+                # TODO: could be that further improvement like Thomas' mid vertex should be done
 
-                # The following algorithm calculates the distances between a vertex point (on the clothes)
-                # and the three vertices (on the human) that have previously been found to be closest.
-                # It then calculates weights based on how large a percentage of the total distance each
-                # distance encompass.
+                # To make the algorithm understandable I change our 3 vertices to triangle ABC and use Blender
+                # Vectors to be able to use internal functions like cross, dot, normal whatever you need
+                # For all vectors I use only capital letters, reading is simplified imho
+
+                A = Vector(self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[0]])
+                B = Vector(self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[1]])
+                C = Vector(self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[2]])
+
+                # We need the normal for this triangle. Normally it is calculated with cross-product using the
+                # distance of e.g. B-A and C-A, but blender has a function implemented for that
+
+                N= mathutils.geometry.normal (A, B, C)
+                # print ("normal vector is " + str(N))
+
+                # The vertex on the clothes is the Vector Q
+                Q = Vector(( vertexMatch.x, vertexMatch.y, vertexMatch.z))
+
+                # transform normal vector to corner of triangle and recalculate length 
+                # new vector is R (direction is the same)
+                QA = Q - A
+                R = Q - N * QA.dot(N)
+
+                # now weight the triangle multiplied with the normal
+                # 
+                BA = B-A
+                BA.normalize()
+                NBA = N.cross(BA)
+                NBA.normalize()
+
+                AC = A-C
+                BC = B-C
+                RC = R-C
+
+                # we are using barycentric coordinates to determine the weights. Normally you have
+                # to do a projection. To get the values of all dimensions we can use the scalar or dot.product
+                # of our vectors. This is also called projection product ...
+                # the barycentric calculation now could be rewritten as
                 #
-                # Unfortunately, the algorithm produces disappointing results. As of now, it is unclear
-                # if the problem is the chosen vertices, or the approach for calculating the weights.
+                # WeightA = ( BC.NBA * RC.BA - BC.BA * RC.NBA) / (BA.AC * BC.NBA - BC.AC * AC.NBA)
+                # WeightB = (-AC.NBA * RC.BA + AC.BA * RC.NBA) / (BA.AC * BC.NBA - BC.AC * AC.NBA)
+                #
+                # WeightC = 1 - WeightA - WeightB
 
-                v1 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[0]]
-                v2 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[1]]
-                v3 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[2]]
-                
-                x = vertexMatch.x
-                y = vertexMatch.y
-                z = vertexMatch.z
-                
-                # Squared distances for vertex 1
-                x1d = (x - v1[0]) * (x - v1[0])
-                y1d = (y - v1[1]) * (y - v1[1])
-                z1d = (z - v1[2]) * (z - v1[2])
+                a00 = AC.dot(BA)
+                a01 = BC.dot(BA)
+                a10 = AC.dot(NBA)
+                a11 = BC.dot(NBA)
+                b0 = RC.dot(BA)
+                b1 = RC.dot(NBA)
 
-                # Squared distances for vertex 2
-                x2d = (x - v2[0]) * (x - v2[0])
-                y2d = (y - v2[1]) * (y - v2[1])
-                z2d = (z - v2[2]) * (z - v2[2])
+                det = a00*a11 - a01*a10
 
-                # Squared distances for vertex 3
-                x3d = (x - v3[0]) * (x - v3[0])
-                y3d = (y - v3[1]) * (y - v3[1])
-                z3d = (z - v3[2]) * (z - v3[2])
+                wa = (a11*b0 - a01*b1)/det
+                wb = (-a10*b0 + a00*b1)/det
+                wc = 1 - wa - wb
 
-                # Euclidian distances
-                d1 = math.sqrt(x1d + y1d + z1d)
-                d2 = math.sqrt(x2d + y2d + z2d)
-                d3 = math.sqrt(x3d + y3d + z3d)
+                # calculate the distance with the weighted vectors and subtract that result from our point Q
+                D = Q - (wa * A + wb * B + wc * C)
 
-                # Sum of distances
-                ds = d1 + d2 + d3
-
-                # Just a safeguard against division of zero
-                if ds < 0.00001:
-                    ds = 0.00001
-
-                # Distances as fractions of total distance, aka weights
-                w1 = d1 / ds
-                w2 = d2 / ds
-                w3 = d3 / ds
-
-                vertexMatch.setWeights(w1, w2, w3)
-
-        for vertexMatch in self.vertexMatches:
-            distance = [0,0,0]
-            if not vertexMatch.exactMatch:
-                v1 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[0]]
-                v2 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[1]]
-                v3 = self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[2]]
-
-                w1 = vertexMatch.weights[0]
-                w2 = vertexMatch.weights[1]
-                w3 = vertexMatch.weights[2]
-
-                medianPoint = [0.0, 0.0, 0.0]
-
-                # X for median point is (vert1 x * vert1 weight) + (vert2 x * vert2 weight) (vert3 x * vert3 weight)
-                medianPoint[0] = (v1[0] * w1) + (v2[0] * w2) + (v3[0] * w3)
-                medianPoint[1] = (v1[1] * w1) + (v2[1] * w2) + (v3[1] * w3)
-                medianPoint[2] = (v1[2] * w1) + (v2[2] * w2) + (v3[2] * w3)
-
-                distance[0] = vertexMatch.x - medianPoint[0]
-                distance[1] = vertexMatch.y - medianPoint[1]
-                distance[2] = vertexMatch.z - medianPoint[2]
-            vertexMatch.distance = distance
+                # add the values
+                vertexMatch.setWeights(wa, wb, wc)
+                vertexMatch.distance = [D[0] * self.scales[0], D[1] * self.scales[1], D[2] * self.scales[2] ]
+            else:
+                # for all exact values
+                vertexMatch.distance = [0,0,0]
 
     def setupTargetDirectory(self):
         cleanedName = re.sub(r'\s+',"_",self.exportName)
@@ -332,6 +329,14 @@ class MakeClothes():
         self.dirName = os.path.join(self.exportRoot,cleanedName)
         if not os.path.exists(self.dirName):
             os.makedirs(self.dirName)
+
+    def getMeshInformation(self):
+        currentdir = os.path.dirname(__file__)
+        self.confName =  os.path.join(currentdir, "data", self.baseMeshType + ".config")
+        print ( self.confName)
+        cfile = open (self.confName, "r")
+        self.meshConfig = json.load(cfile)
+        cfile.close()
 
     def writeDebug(self):
         outputFile = os.path.join(self.dirName, self.cleanedName + ".debug.csv")
@@ -379,30 +384,77 @@ class MakeClothes():
                     idx = vm.closestHumanVertexIndices[i]
                     self.humanObj.data.vertices[idx].select = True
 
+    # for DeleteVertices test if the assigned delete-group is found on the human
+    # and collect vertices belonging to this group
+
+    def evaluateDeleteVertices(self):
+        deletegroup = self.clothesObj.MhDeleteGroup
+        lastindex = -2
+        cnt = 0
+        column = 0
+        if deletegroup != "":
+            vgrp = self.humanObj.vertex_groups
+
+            # get group index and check on human
+            #
+            if vgrp is not None and deletegroup in vgrp:
+
+                gindex = vgrp[deletegroup].index
+
+                for v in self.humanObj.data.vertices:
+                    for g in v.groups:
+
+                        # if the index of the group fits to the current group
+                        # print it as sequences when possible
+                        #
+                        if g.group == gindex:
+                            if lastindex + 1 != v.index:
+                                if cnt > 1:
+                                    self.deleteVerticesOutput += " - " + str(lastindex)
+
+                                # formating after 8 columns do a LF
+                                #
+                                column += 1
+                                if column > 8:
+                                    column = 0
+                                    self.deleteVerticesOutput += "\n"
+
+                                self.deleteVerticesOutput += " " + str(v.index)
+                                cnt = 1
+                            else:
+                                if lastindex < 0:
+                                    self.deleteVerticesOutput += str(v.index)
+                                cnt += 1
+                            lastindex = v.index
+                if cnt > 1:
+                    self.deleteVerticesOutput += " - " + str(lastindex)
 
     def writeMhClo(self):
         outputFile = os.path.join(self.dirName,self.cleanedName + ".mhclo")
         with open(outputFile,"w") as f:
             f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
-            f.write("# author: Unkown\n")
+            f.write("# author: "  + self.exportAuthor + "\n")
             f.write("# license: " + self.exportLicense + "\n#\n")
             f.write("# description: " + self.exportDescription + "\n#\n")
-            f.write("basemesh hm08\n\n")
+            f.write("basemesh " + self.baseMeshType + "\n\n")
             f.write("# Basic info:\n")
             f.write("name " + self.exportName + "\n")
             f.write("obj_file " + self.cleanedName + ".obj\n")
             f.write("material " + self.cleanedName + ".mhmat" + "\n\n")
             f.write("uuid " + str(uuid.uuid4()) + "\n")
-            # TODO: Figure out what the scale values are for
-            f.write("# Settings: (I have no idea what the scale is derived from atm)\n")
-            f.write("x_scale 5399 11998 1.4800\n")
-            f.write("z_scale 962 5320 1.9221\n")
-            f.write("y_scale 791 881 2.3298\n")
-            f.write("z_depth 50\n\n")
+            f.write("x_scale " + str(self.minmax['xmin']) + " " + str(self.minmax['xmax']) + " " + str(round(self.scales[0], 4)) + "\n")
+            f.write("y_scale " + str(self.minmax['ymin']) + " " + str(self.minmax['ymax']) + " " + str(round(self.scales[1], 4)) + "\n")
+            f.write("z_scale " + str(self.minmax['zmin']) + " " + str(self.minmax['zmax']) + " " + str(round(self.scales[2], 4)) + "\n")
+            f.write("z_depth " + str(self.clothesObj.MhZDepth) + "\n\n")
             f.write("# Vertex info:\n")
             f.write("verts 0\n")
             for vm in self.vertexMatches:
                 f.write(str(vm) + "\n")
+
+            # write the delete vertice numbers of the basemesh
+            if self.deleteVerticesOutput != "":
+                f.write ("\ndelete_verts\n" + self.deleteVerticesOutput + "\n")
+
 
     def writeObj(self):
         # Yes, I'm aware there is a wavefront exporter in the blender API already. However, we need to make
@@ -413,11 +465,12 @@ class MakeClothes():
         outputFile = os.path.join(self.dirName, self.cleanedName + ".obj")
         with open(outputFile,"w") as f:
             f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
+            f.write("# author: "  + self.exportAuthor + "\n")
             f.write("# license: " + self.exportLicense + "\n#\n")
             texCo = []
             for v in mesh.vertices:
                 # TODO: apply scale, origin
-                f.write("v %.4f %.4f %.4f\n" % v.co[:])
+                f.write("v %.4f %.4f %.4f\n" % (v.co[0], v.co[2], -v.co[1]))
                 texCo.append([0.0, 0.0])
             for face in mesh.polygons:
                 for vert_idx, loop_idx in zip(face.vertices, face.loop_indices):
@@ -425,7 +478,7 @@ class MakeClothes():
                     #f.write("# face idx: %i, vert idx: %i, uvs: %f, %f\n" % (face.index, vert_idx, uv_coords.x, uv_coords.y))
                     texCo[vert_idx] = [uv_coords.x, uv_coords.y]
             for uv in texCo:
-                f.write("vt " + str(uv[0]) + " " + str(uv[1]) + "\n")
+                f.write("vt %.4f %.4f\n" % (uv[0], uv[1]))
             for p in mesh.polygons:
                 f.write("f")
                 for i in p.vertices:
@@ -437,7 +490,7 @@ class MakeClothes():
         outputFile = os.path.join(self.dirName,self.cleanedName + ".mhmat")
         with open(outputFile,"w") as f:
             f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
-            f.write("# author: Unkown\n")
+            f.write("# author: " + self.exportAuthor + "\n")
             f.write("# license: " + self.exportLicense + "\n#\n")
             f.write("name " + self.exportName + " material\n\n")
 

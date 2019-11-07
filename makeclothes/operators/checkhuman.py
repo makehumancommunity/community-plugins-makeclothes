@@ -15,31 +15,10 @@ class MHC_OT_CheckHumanOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
+        # set mode to object, especially if you are still in edit mode
+        # (otherwise last changes are not used
+        bpy.ops.object.mode_set(mode='OBJECT')
 
-        humanObj = None
-
-        for obj in context.scene.objects:
-            if hasattr(obj, "MhObjectType"):
-                if obj.MhObjectType == "Basemesh":
-                    if humanObj is None:
-                        humanObj = obj
-                    else:
-                        self.report({'ERROR'}, "There are multiple human objects in this scene. To avoid errors, only use one.")
-                        return {'FINISHED'}
-
-        if humanObj is None:
-            self.report({'ERROR'}, "Could not find any human object in this scene.")
-            return {'FINISHED'}
-
-        if not checkHasAnyVGroups(humanObj):
-            self.report({'ERROR'}, "The human object does not have any vertex group. It has to have at least one for MakeClothes to work.")
-            return {'FINISHED'}
-
-        if not checkVertexGroupAssignmentsAreNotCorrupt(humanObj):
-            self.report({'ERROR'}, "The human object has vertices which belong non-existing vertex groups, see console for more info")
-            return {'FINISHED'}
-
-        # Todo: warn if there is no delete group
-
-        self.report({'INFO'}, "Seems OK")
+        (b, info, error) = checkSanityHuman(context)
+        bpy.ops.info.infobox('INVOKE_DEFAULT', title="Check Human", info=info, error=error)
         return {'FINISHED'}
