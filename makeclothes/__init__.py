@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-#  Author: Joel Palmius
+#  Authors: Joel Palmius
+#           black-punkduck
 
 from bpy.utils import register_class, unregister_class
 from .extraproperties import extraProperties

@@ -125,6 +125,8 @@ class MakeClothes():
         self.deleteVerticesOutput = ""
 
         self.clothesmesh.getAdditionalIndices() 
+        self.clothesmesh.getUVforExport()       # method to assign UVs to mesh
+
         self.getMeshInformation()    
         self.findClosestVertices()
         self.findBestFaces()
@@ -455,28 +457,45 @@ class MakeClothes():
 
         obj = self.clothesObj
         mesh = obj.data
+
         outputFile = os.path.join(self.dirName, self.cleanedName + ".obj")
+        #
+        # scale, rotation and origin are not necessary because everything has be applied before
+        #
         with open(outputFile,"w") as f:
             f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
             f.write("# author: "  + self.exportAuthor + "\n")
             f.write("# license: " + self.exportLicense + "\n#\n")
-            texCo = []
             for v in mesh.vertices:
-                # TODO: apply scale, origin
                 f.write("v %.4f %.4f %.4f\n" % (v.co[0], v.co[2], -v.co[1]))
-                texCo.append([0.0, 0.0])
-            for face in mesh.polygons:
-                for vert_idx, loop_idx in zip(face.vertices, face.loop_indices):
-                    uv_coords = mesh.uv_layers.active.data[loop_idx].uv
-                    #f.write("# face idx: %i, vert idx: %i, uvs: %f, %f\n" % (face.index, vert_idx, uv_coords.x, uv_coords.y))
-                    texCo[vert_idx] = [uv_coords.x, uv_coords.y]
-            for uv in texCo:
-                f.write("vt %.4f %.4f\n" % (uv[0], uv[1]))
-            for p in mesh.polygons:
-                f.write("f")
-                for i in p.vertices:
-                    f.write(" %d" % (i + 1))
-                f.write("\n")
+
+            # check if we have a texture
+            # in this case we create vt and f a/b lines per vertex
+            # else create only f lines with one parameter per vertex
+            #
+            if self.clothesmesh.has_uv:
+                texVerts = self.clothesmesh.texVerts
+                nTexVerts = len(texVerts)
+                for vtn in range(nTexVerts):
+                    uv = texVerts[vtn]
+                    f.write("vt %.4f %.4f\n" % (uv[0], uv[1]))
+
+                uvFaceVerts = self.clothesmesh.uvFaceVerts
+                for polygon in mesh.polygons:
+                    uvVerts = uvFaceVerts[polygon.index]
+                    line = ["f"]
+                    for n,v in enumerate(polygon.vertices):
+                        (vt, uv) = uvVerts[n]
+                        line.append("%d/%d" % (v+1, vt+1))
+                    f.write(" ".join(line))
+                    f.write("\n")
+
+            else:
+                for p in mesh.polygons:
+                    f.write("f")
+                    for i in p.vertices:
+                        f.write(" %d" % (i + 1))
+                    f.write("\n")
 
     def writeMhMat(self):
         mhmat = MHMaterial(self.clothesObj)

@@ -33,6 +33,10 @@ class MHMesh:
         self.edgePolygons = {}  # will contain all polygons connected to an edge
         self.polygonEdges = {}  # will contain all edges a polygon is using
         self.polygonNeighbors = {} # will contain neighbor-polygons/faces
+        self.uvFaceVerts = {}   # will contain UV-vertices for wavefront export 
+        self.texVerts = {}      # will vertex number for UV
+
+        self.has_uv = False
 
 
         if len(obj.vertex_groups) < 1:
@@ -203,6 +207,59 @@ class MHMesh:
                     if neighbor != polygon:                 # do not add yourself :-)
                         self.polygonNeighbors[polygon.index].append((edge,neighbor))
 
+
+    #
+    # create a UV/Polygon table for a texture
+    #
+    def getUVforExport(self):
+        mesh = self.obj.data
+        uvlayer  = mesh.uv_layers.active
+
+        # 
+        # in case we have no texture
+        #
+        if uvlayer is None:
+            return 
+
+        #
+        # add UV-verts to all polygons as an array
+        #
+        for polygon in mesh.polygons:
+            self.uvFaceVerts[polygon.index] = []
+
+        #
+        # collect face vertices and append all to uvFaceVerts list
+        # vtn counts numbers of new faces
+        # if the distance to neighbor vertex on UV map is less than < 1e-8 an existing entry is used otherwise a new entry is created
+        # uvFaceVerts will contain the entry
+        #
+        vtn = 0
+        n = 0
+
+        for polygon in mesh.polygons:
+            for vn in polygon.vertices:
+                uv = uvlayer.data[n].uv
+                n += 1
+                #
+                # check if the entry is already existing
+                #
+                found = False
+                for (edge,neighbor) in self.polygonNeighbors[polygon.index]:
+                    for (vtn1,uv1) in self.uvFaceVerts[neighbor.index]:
+                        vec = uv - uv1
+                        if vec.length < 1e-8:
+                            self.uvFaceVerts[polygon.index].append((vtn1,uv))
+                            found = True
+                #
+                # so we got a new one
+                #
+                if found is False:
+                    self.uvFaceVerts[polygon.index].append((vtn,uv))
+                    self.texVerts[vtn] = uv
+                    vtn +=1
+
+        self.has_uv = True
+        return
 
     #
     # used to determine x,y,z scale of object
