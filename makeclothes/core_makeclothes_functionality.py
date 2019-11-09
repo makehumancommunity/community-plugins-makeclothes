@@ -124,6 +124,7 @@ class MakeClothes():
 
         self.deleteVerticesOutput = ""
 
+        self.clothesmesh.getAdditionalIndices() 
         self.getMeshInformation()    
         self.findClosestVertices()
         self.findBestFaces()
@@ -186,14 +187,6 @@ class MakeClothes():
                         vertexMatch.closestHumanVertexCoordinates = hCoord
                     self.vertexMatches.append(vertexMatch)
 
-    def findFacesForVert(self, vertIdx):
-        # There must be a more efficient way to do this
-        faces = []
-        for poly in self.humanObj.data.polygons:
-            if vertIdx in poly.vertices:
-                faces.append(poly.index)
-        return faces
-
     def findBestFaces(self):
         # In this method we will go through the vertexmatches and if needed switch which vertices are selected so that all
         # vertices belong to the same face.
@@ -203,8 +196,8 @@ class MakeClothes():
                 maxScore = 1
                 for i in [0, 1, 2]:
                     vertIdx = vm.closestHumanVertexIndices[i]
-                    facesForVert = self.findFacesForVert(vertIdx)
-                    for faceIdx in facesForVert:
+                    for polygon in self.humanmesh.vertPolygons[vertIdx]:
+                        faceIdx = polygon.index
                         alreadyAdded = False
                         for fm in faceMatches:
                             if fm.faceIndex == faceIdx:
