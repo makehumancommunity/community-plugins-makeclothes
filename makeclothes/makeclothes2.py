@@ -55,6 +55,7 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
                 produceBox.prop(obj, 'MhClothesName', text="")
                 produceBox.label(text="Description")
                 produceBox.prop(obj, 'MhClothesDesc', text="")
+                produceBox.operator("makeclothes.tag_selector", text="Edit tags")
                 col = produceBox.column()
                 row = col.row()
                 row.label(text="Z-Depth")

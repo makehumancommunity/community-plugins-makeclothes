@@ -1,0 +1,50 @@
+{
+	"gender": {
+		"unisex": { "com": "not gender specific", "sel": 1 },
+		"female": { "com": "clothes used for females" },
+		"male": { "com": "clothes used for males" }
+	},
+	"dresscode": {
+		"none":   { "text": "", "com": "not specified", "sel": 1 },
+		"casual": { "com": "casual outfit or streetware" },
+		"formal": { "com": "formal outfit" },
+		"fantasy": { "com": "fantasy outfit and costumes" }
+	},
+	"activity": {
+		"none":  {"text": "", "com": "not specified", "sel": 1 },
+		"festive": {"com": "for festive outfit, religious outfit" },
+		"leisure": {"com": "everyday and streetware" },
+		"play": {"com": "theater, fantasy, cosplay, film" },
+		"profession": {"com": "uniform or typical clothes for a profession" },
+		"sport": {"com": "clothes for all kinds of sports" }
+	},
+	"period": {
+		"none": { "text": "", "com": "not specified", "sel": 1 },
+		"contemporary": {"com": "clothes which are normal today" },
+		"traditional": {"com": "clothes which traditional for locations or ethnic groupt" },
+		"vintage": {"com": "clothes which are worn in the past" },
+		"future": {"com": "clothes which might be used in future generations"}
+	},
+	"type": {
+		"none": { "text": "", "com": "not specified", "sel": 1 },
+		"bag": { "text": "accessory: bag", "com": "all kinds of bags" },
+		"carried-item": { "text": "accessory: carried-item", "com": "all kinds of carried items not specified" },
+		"extension": { "text": "accessory: extension", "com": "all kinds of extensions added to a character directly e.g. wings" },
+		"jewelry": { "text": "accessory: jewelry", "com": "all kinds of jewelry" },
+		"weapon": { "text": "accessory: weapon", "com": "all kinds of weapons and shields"},
+		"boots": { "text": "footwear: boots", "com": "all kinds of boots" },
+		"heels": { "text": "footwear: heels", "com": "all kinds of high heels" },
+		"sandals": { "text": "footwear: sandals", "com": "all kinds of sandals" },
+		"shoes": { "text": "footwear: shoes", "com": "all kinds of shoes" },
+		"hat": { "text": "headwear: hat", "com": "all kinds of hats and caps" },
+		"helmet": { "text": "headwear: helmet", "com": "all kinds of helmets" },
+		"mask": { "text": "headwear: mask", "com": "all kinds of masks" },
+		"coat": { "text": "outerwear: coat", "com": "all kinds of coats" },
+		"pants": { "text": "outerwear: pants", "com": "all kinds of pants, shorts etc." },
+		"skirt": { "text": "outerwear: skirt", "com": "all kinds of skirts" },
+		"bottom": { "text": "underwear: bottom", "com": "all kinds of bottoms, strings, tanga etc." },
+		"bra": { "text": "underwear: bra", "com": "all kinds of bras" },
+		"lingerie": { "text": "underwear: lingerie", "com": "all kinds of lingerie" },
+		"undershirt": { "text": "underwear: undershirt", "com": "all kinds of undershirts" }
+	}
+}

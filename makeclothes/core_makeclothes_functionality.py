@@ -434,6 +434,12 @@ class MakeClothes():
             f.write("basemesh " + self.baseMeshType + "\n\n")
             f.write("# Basic info:\n")
             f.write("name " + self.exportName + "\n")
+
+            # add the tags 
+            #
+            for tag in self.clothesObj.MhClothesTags.split(","):
+                f.write("tag " + tag + "\n")
+
             f.write("obj_file " + self.cleanedName + ".obj\n")
             f.write("material " + self.cleanedName + ".mhmat" + "\n\n")
             f.write("uuid " + str(uuid.uuid4()) + "\n")
