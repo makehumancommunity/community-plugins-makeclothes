@@ -62,7 +62,7 @@ def extraProperties():
             if "com" in  groupitems[item]:          # normal comment is read from file
                 com = groupitems[item]["com"]
             disp = item
-            if "text" in  groupitems[item]:         # in case we use ab alternative text to show the item
+            if "text" in  groupitems[item]:         # in case we use an alternative text to show the item
                 disp =  groupitems[item]["text"]
             if "sel" in  groupitems[item]:          # this one should be preselected
                 mh_sel[group] =  item

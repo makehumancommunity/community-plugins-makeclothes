@@ -14,6 +14,14 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         scn = context.scene
+
+        base_available = False
+        for obj in scn.objects:
+            if hasattr(obj, "MhObjectType"):
+                if obj.MhObjectType == "Basemesh":
+                    base_available = True
+                    break
+
         obj = context.active_object
 
         setupBox = layout.box()
@@ -26,6 +34,9 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
 
         humanBox = layout.box()
         humanBox.label(text="Human", icon="MESH_DATA")
+        if not base_available:
+            humanBox.operator("makeclothes.importhuman", text="Import human")
+
         humanBox.operator("makeclothes.mark_as_human", text="Mark as human")
         humanBox.operator("makeclothes.check_human", text="Check human")
 
