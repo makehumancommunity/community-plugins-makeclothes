@@ -250,6 +250,9 @@ class MHMesh:
                         if vec.length < 1e-8:
                             self.uvFaceVerts[polygon.index].append((vtn1,uv))
                             found = True
+                            break
+                    if found is True:
+                        break
                 #
                 # so we got a new one
                 #
