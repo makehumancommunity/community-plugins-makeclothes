@@ -3,7 +3,9 @@
 
 #  Author: Joel Palmius
 
-import os
+import os, inspect
+
+_TRACING = True
 
 def getMyDocuments():
     import sys
@@ -41,3 +43,20 @@ def getMHDirectory():
 def getClothesRoot():
     mhdir = getMHDirectory()
     return os.path.join(mhdir,"data","clothes")
+
+
+def trace(message = None):
+    global _TRACING
+    if _TRACING:
+        info = dict()
+
+        stack = inspect.currentframe().f_back
+        info["line_number"] = str(stack.f_lineno)
+        info["caller_name"] = stack.f_globals["__name__"]
+        info["file_name"] = stack.f_globals["__file__"]
+        info["caller_method"] = inspect.stack()[1][3]
+
+        stack = inspect.stack()
+        info["caller_class"] = str(stack[1][0].f_locals["self"].__class__)
+
+        print("TRACE {}.{}():{}".format(info["caller_name"], info["caller_method"], info["line_number"]))
