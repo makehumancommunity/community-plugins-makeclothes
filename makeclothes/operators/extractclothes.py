@@ -59,6 +59,12 @@ class MHC_OT_ExtractClothesOperator(bpy.types.Operator):
                 self.report({'ERROR'}, "This mesh does not have the " + groupName + " vertex group. Maybe you didn't import with detailed helpers?")
                 return {'FINISHED'}
 
+        # when a mesh was loaded by normal wavefront loader, the groups can be used also, but the mesh transformations must be
+        # applied before
+        #
+        context.view_layer.objects.active = humanObj
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
         mesh = bpy.data.meshes.new("clothes")
         newObj = bpy.data.objects.new("clothes", mesh)
 
