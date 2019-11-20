@@ -45,7 +45,7 @@ def extraProperties():
         bpy.types.Object.MhClothesDesc = StringProperty(name="Description", description="", default="no description")
     if not hasattr(bpy.types.Object, "MhDeleteGroup"):
         bpy.types.Object.MhDeleteGroup = StringProperty(name="Delete Group",
-                description="The group contains the vertices to be deleted on the human which are hidden by your piece of cloth", default="")
+                description="The group contains the vertices to be deleted on the human which are hidden by your piece of cloth", default="Delete")
     if not hasattr(bpy.types.Object, "MhZDepth"):
         bpy.types.Object.MhZDepth = IntProperty(name="Z-Depth", description="", default=50)
     if not hasattr(bpy.types.Object, "MhHuman"):
