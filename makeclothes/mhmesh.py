@@ -24,8 +24,20 @@ class MHMesh:
         self.vertexGroupNames = dict()
         self.vertexGroupVertexIndexMap = dict()
         self._seedGroups = dict()
-
         self._seedVertexCoordinates = []
+        self.vertPolygons = {}  # will contain all polygons connected to a vertex, needed for efficiency (bestFace search)
+
+        # additional helper indices, filled by getAdditionalIndices
+        #
+        self.vertEdges = {}     # will contain all edges connected to a vertex
+        self.edgePolygons = {}  # will contain all polygons connected to an edge
+        self.polygonEdges = {}  # will contain all edges a polygon is using
+        self.polygonNeighbors = {} # will contain neighbor-polygons/faces
+        self.uvFaceVerts = {}   # will contain UV-vertices for wavefront export 
+        self.texVerts = {}      # will vertex number for UV
+
+        self.has_uv = False
+
 
         if len(obj.vertex_groups) < 1:
             raise ValueError("This object has no vertex groups. Refusing to continue.")
@@ -35,6 +47,7 @@ class MHMesh:
                 self.vertexGroupNames[int(group.index)] = group.name
 
         for vertex in obj.data.vertices:
+            self.vertPolygons[vertex.index] = []    # supply an index to be filled, will contain all polygons connected to a vertex
             i = int(vertex.index)
             x = float(vertex.co[0])
             y = float(vertex.co[1])
@@ -50,6 +63,12 @@ class MHMesh:
                     seedGroup = self._seedGroups[groupIndex]
                     vertDef = [int(vertex.index), float(vertex.co[0]), float(vertex.co[1]), float(vertex.co[2])] # Index, x, y, z
                     seedGroup.append(vertDef)
+
+        # supply an index of all polygons connected to a vertex
+        #
+        for polygon in obj.data.polygons:
+            for vertex in polygon.vertices:
+                self.vertPolygons[vertex].append(polygon)
 
         # This somewhat cumbersome routine is here to ensure that vertex.index equals index in the
         # resulting numpy array. It is theoretically possible that the index a vertex says it has
@@ -134,6 +153,116 @@ class MHMesh:
                     return (kd)
 
         return False
+
+    # 
+    # generates special indices to speed up searches and also used for UV-mapping
+    # these indices are only needed for clothes and so it is not part of the init itself
+    #
+    def getAdditionalIndices(self):
+        mesh = self.obj.data
+
+        # supply an index of all edges connected to a vertex
+        #
+        for vertex in mesh.vertices:
+            self.vertEdges[vertex.index] = []
+
+        for edge in mesh.edges:
+            for vertex in edge.vertices:
+                self.vertEdges[vertex].append(edge)
+
+        # now make a connection between polygons and edges in both directions
+        #
+        for edge in mesh.edges:
+            self.edgePolygons[edge.index] = []
+
+        for polygon in mesh.polygons:
+            self.polygonEdges[polygon.index] = []
+
+        # create a polygon-entry for an edge and an edge entry for a polygon,
+        # if both vertices of the edge belong to the polygon
+        # avoid double entries
+
+        for polygon in mesh.polygons:
+            for vertex in polygon.vertices:
+                for edge in self.vertEdges[vertex]:
+                    v0 = edge.vertices[0]
+                    v1 = edge.vertices[1]
+                    if (v0 in polygon.vertices) and (v1 in polygon.vertices):
+                        if polygon not in self.edgePolygons[edge.index]:
+                            self.edgePolygons[edge.index].append(polygon)
+                        if edge not in self.polygonEdges[polygon.index]:
+                            self.polygonEdges[polygon.index].append(edge)
+
+
+        # evaluate polygon neighbors (or faces neighbors)
+        #
+        # an entry containing edge number and polygon number is created
+
+        for polygon in mesh.polygons:
+            self.polygonNeighbors[polygon.index] = []
+
+        for polygon in mesh.polygons:
+            for edge in self.polygonEdges[polygon.index]:
+                for neighbor in self.edgePolygons[edge.index]:
+                    if neighbor != polygon:                 # do not add yourself :-)
+                        self.polygonNeighbors[polygon.index].append((edge,neighbor))
+
+
+    #
+    # create a UV/Polygon table for a texture
+    #
+    def getUVforExport(self):
+        mesh = self.obj.data
+        uvlayer  = mesh.uv_layers.active
+
+        # 
+        # in case we have no texture
+        #
+        if uvlayer is None:
+            return 
+
+        #
+        # add UV-verts to all polygons as an array
+        #
+        for polygon in mesh.polygons:
+            self.uvFaceVerts[polygon.index] = []
+
+        #
+        # collect face vertices and append all to uvFaceVerts list
+        # vtn counts numbers of new faces
+        # if the distance to neighbor vertex on UV map is less than < 1e-8 an existing entry is used otherwise a new entry is created
+        # uvFaceVerts will contain the entry
+        #
+        vtn = 0
+        n = 0
+
+        for polygon in mesh.polygons:
+            for vn in polygon.vertices:
+                uv = uvlayer.data[n].uv
+                n += 1
+                #
+                # check if the entry is already existing
+                #
+                found = False
+                for (edge,neighbor) in self.polygonNeighbors[polygon.index]:
+                    for (vtn1,uv1) in self.uvFaceVerts[neighbor.index]:
+                        vec = uv - uv1
+                        if vec.length < 1e-8:
+                            self.uvFaceVerts[polygon.index].append((vtn1,uv))
+                            found = True
+                            break
+                    if found is True:
+                        break
+                #
+                # so we got a new one
+                #
+                if found is False:
+                    self.uvFaceVerts[polygon.index].append((vtn,uv))
+                    self.texVerts[vtn] = uv
+                    vtn +=1
+
+        self.has_uv = True
+        return
 
     #
     # used to determine x,y,z scale of object
