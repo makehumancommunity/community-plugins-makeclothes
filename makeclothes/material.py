@@ -3,7 +3,7 @@
 
 import bpy, bmesh, os
 import bpy.types
-from bpy.types import ShaderNodeBsdfPrincipled
+from bpy.types import ShaderNodeBsdfPrincipled, ShaderNodeTexImage
 
 class MHMaterial:
 
@@ -13,8 +13,12 @@ class MHMaterial:
         self.shininess = 0.5
         self.opacity = 1.0
 
+        self.nodes = None
+
         self._blenderMaterial = None
         self._principledNode = None
+
+        self.diffuseTexture = None
 
         if not obj is None:
             if len(obj.data.materials) > 0:
@@ -29,16 +33,50 @@ class MHMaterial:
                     self._parseNodeTree(self._blenderMaterial.node_tree)
 
     def _parseNodeTree(self, nodes):
+        self.nodes = nodes
+
         # Assume there is a principled node to which everything else
         # is connected. So find that first
         for node in nodes.nodes:
             if isinstance(node,ShaderNodeBsdfPrincipled):
                 self._parsePrincipled(node)
 
+        self._findDiffuseTexture()
+
     def _parsePrincipled(self, principled):
         self._principledNode = principled
         self.diffuseColor = principled.inputs["Base Color"].default_value
         self.shininess = 1.0 - principled.inputs["Roughness"].default_value
+
+    def _findDiffuseTexture(self):
+        if not self._principledNode:
+            return
+        for link in self.nodes.links:
+            if link.to_node == self._principledNode:
+                tsock = link.to_socket
+                if tsock.name == "Base Color":
+                    fnode = link.from_node
+                    if isinstance(fnode, ShaderNodeTexImage):
+                        if fnode.image:
+                            if fnode.image.filepath or fnode.image.filepath_raw:
+                                if fnode.image.filepath:
+                                    self.diffuseTexture = fnode.image.filepath
+                                else:
+                                    self.diffuseTexture = fnode.image.filepath_raw
+                            else:
+                                print("Found image texture with an image property, but the image had an empty file path. Giving up on finding a diffuse texture.")
+                                return
+                        else:
+                            print("Found an image texture, but its image property was empty. Giving up on finding a diffuse texture.")
+                            return
+                    else:
+                        print("The principled node had a link to its Base Color input, but the source was not an image texture. Giving up on finding a diffuse texture.")
+                        return
+        if self.diffuseTexture:
+            print("Found a diffuse texture: " + self.diffuseTexture)
+        else:
+            print("There was no diffuse texture to be found")
+
 
 # TODO: Manage linked textures etc
 

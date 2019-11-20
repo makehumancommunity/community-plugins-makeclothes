@@ -1,7 +1,6 @@
 from .mhmesh import MHMesh
 from .material import MHMaterial
-import json
-import math, re, os, uuid
+import json, math, re, os, uuid, shutil
 import mathutils
 from mathutils import Vector
 
@@ -520,3 +519,8 @@ class MakeClothes():
 
             f.write("// Textures and properties\n\n")
 
+            if mhmat.diffuseTexture:
+                bn = os.path.basename(mhmat.diffuseTexture)
+                dest = os.path.join(self.dirName, bn)
+                shutil.copyfile(mhmat.diffuseTexture, dest)
+                f.write("diffuseTexture " + bn)
