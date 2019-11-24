@@ -73,6 +73,7 @@ class MHMaterial:
                         print("The principled node had a link to its Base Color input, but the source was not an image texture. Giving up on finding a diffuse texture.")
                         return
         if self.diffuseTexture:
+            self.diffuseTexture = bpy.path.abspath(self.diffuseTexture)
             print("Found a diffuse texture: " + self.diffuseTexture)
         else:
             print("There was no diffuse texture to be found")
