@@ -141,7 +141,6 @@ class MHMesh:
                 # now find all vertices belonging to the group, we first need size of the KDTree
                 # we append all vertex numbers to a temporary array, so that we don't have to do the work twice
                 #
-                print ("Found group" + vertexGroupName)
                 tmp_varray = []
                 groupIndex = group.index
                 for vertex in self.data.vertices:

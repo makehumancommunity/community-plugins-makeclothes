@@ -29,7 +29,6 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
         setupBox.operator("makeclothes.mark_as_clothes", text="Mark as clothes")
 
         setupBox.label(text="Vertex group as clothes:")
-        setupBox.prop(scn, 'MhExtractClothes', text="")
         setupBox.operator("makeclothes.extract_clothes", text="Extract clothes")
 
         humanBox = layout.box()

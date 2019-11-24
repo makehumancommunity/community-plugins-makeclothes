@@ -40,7 +40,7 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
 
         clothesObj = context.active_object
 
-        (b, info, error) = checkSanityClothes(clothesObj)
+        (b, info, error) = checkSanityClothes(clothesObj, humanObj)
         if b:
             bpy.ops.info.infobox('INVOKE_DEFAULT', title="Check Clothes", info=info, error=error)
             return {'FINISHED'}
@@ -65,8 +65,11 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
         license = context.scene.MhClothesLicense
         author =  context.scene.MhClothesAuthor
 
-        MakeClothes(clothesObj, humanObj, exportName=name, exportRoot=rootDir, license=license, author=author, description=desc, context=context)
-
-        self.report({'INFO'}, "Clothes were written to " + os.path.join(rootDir,name))
+        mc = MakeClothes(clothesObj, humanObj, exportName=name, exportRoot=rootDir, license=license, author=author, description=desc)
+        (b, hint) = mc.make()
+        if b is False:
+            self.report({'ERROR'}, hint)
+        else:
+            self.report({'INFO'}, "Clothes were written to " + os.path.join(rootDir,name))
         return {'FINISHED'}
 
