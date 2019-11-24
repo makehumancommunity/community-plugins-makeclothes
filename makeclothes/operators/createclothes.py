@@ -65,7 +65,7 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
         license = context.scene.MhClothesLicense
         author =  context.scene.MhClothesAuthor
 
-        mc = MakeClothes(clothesObj, humanObj, exportName=name, exportRoot=rootDir, license=license, author=author, description=desc)
+        mc = MakeClothes(clothesObj, humanObj, exportName=name, exportRoot=rootDir, license=license, author=author, description=desc, context=context)
         (b, hint) = mc.make()
         if b is False:
             self.report({'ERROR'}, hint)
