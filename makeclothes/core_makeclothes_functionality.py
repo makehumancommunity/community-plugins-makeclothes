@@ -102,10 +102,13 @@ class _FaceMatch():
 
 class MakeClothes():
 
-    def __init__(self, clothesObj, humanObj, exportName="clothes", exportRoot="/tmp", license="CC0", author="unknown", description="No description"):
+    def __init__(self, clothesObj, humanObj, exportName="clothes", exportRoot="/tmp", license="CC0", author="unknown", description="No description", context=None):
         self.clothesObj = clothesObj
         self.humanObj = humanObj
-        self.clothesmesh = MHMesh(clothesObj)
+        if context:
+            self.clothesmesh = MHMesh(clothesObj, context=context, allow_modifiers=True)
+        else:
+            self.clothesmesh = MHMesh(clothesObj)
         self.humanmesh = MHMesh(humanObj)
 
         self.vertexMatches = []
@@ -461,7 +464,7 @@ class MakeClothes():
         # sure that we're using the proper origin and scale.
 
         obj = self.clothesObj
-        mesh = obj.data
+        mesh = self.clothesmesh.data
 
         outputFile = os.path.join(self.dirName, self.cleanedName + ".obj")
         #

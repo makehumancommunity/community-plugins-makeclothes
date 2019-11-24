@@ -5,7 +5,7 @@ import numpy, pprint, mathutils
 
 class MHMesh:
 
-    def __init__(self, obj):
+    def __init__(self, obj, context=None, allow_modifiers=False):
         """
         Parse the mesh into a set of numpy arrays, separated per vertex group.
 
@@ -20,6 +20,14 @@ class MHMesh:
         """
 
         self.obj = obj
+        self.data = obj.data
+
+        if context and allow_modifiers:
+            dg = context.evaluated_depsgraph_get()
+            obj2 = context.object.evaluated_get(dg)
+            mesh = obj2.to_mesh(preserve_all_data_layers=True, depsgraph=dg)
+            self.data = mesh
+
         self.vertexGroupVertices = dict()
         self.vertexGroupNames = dict()
         self.vertexGroupVertexIndexMap = dict()
@@ -46,7 +54,7 @@ class MHMesh:
             if not group.name in self.vertexGroupNames:
                 self.vertexGroupNames[int(group.index)] = group.name
 
-        for vertex in obj.data.vertices:
+        for vertex in self.data.vertices:
             self.vertPolygons[vertex.index] = []    # supply an index to be filled, will contain all polygons connected to a vertex
             i = int(vertex.index)
             x = float(vertex.co[0])
@@ -66,7 +74,7 @@ class MHMesh:
 
         # supply an index of all polygons connected to a vertex
         #
-        for polygon in obj.data.polygons:
+        for polygon in self.data.polygons:
             for vertex in polygon.vertices:
                 self.vertPolygons[vertex].append(polygon)
 
@@ -136,7 +144,7 @@ class MHMesh:
                 print ("Found group" + vertexGroupName)
                 tmp_varray = []
                 groupIndex = group.index
-                for vertex in obj.data.vertices:
+                for vertex in self.data.vertices:
                         for vgroup in vertex.groups:
                             if groupIndex == vgroup.group:
                                 tmp_varray.append(vertex)
@@ -159,7 +167,7 @@ class MHMesh:
     # these indices are only needed for clothes and so it is not part of the init itself
     #
     def getAdditionalIndices(self):
-        mesh = self.obj.data
+        mesh = self.data
 
         # supply an index of all edges connected to a vertex
         #
@@ -212,7 +220,7 @@ class MHMesh:
     # create a UV/Polygon table for a texture
     #
     def getUVforExport(self):
-        mesh = self.obj.data
+        mesh = self.data
         uvlayer  = mesh.uv_layers.active
 
         # 
@@ -268,7 +276,7 @@ class MHMesh:
     # used to determine x,y,z scale of object
     #
     def getScale(self, num1, num2, dimension):
-        verts = self.obj.data.vertices
+        verts = self.data.vertices
 
         # in case we don't have the vertex numbers
         # or distance is 0 return a value of 1
