@@ -2,24 +2,29 @@
 # -*- coding: utf-8 -*-
 
 import bpy, bmesh
+from ..core_makeclothes_functionality import _loadMeshJson
 
-_select_groups_map = dict()
-_select_groups_map["BODY"] = ["body"]
-_select_groups_map["SKIRT"] = ["helper-skirt"]
-_select_groups_map["TIGHTS"] = ["helper-tights"]
-_select_groups_map["EYES"] = ["helper-l-eye", "helper-r-eye"]
-_select_groups_map["HAIR"] = ["helper-hair"]
-_select_groups_map["EYELASHES"] = ["helper-l-eyelashes","helper-r-eyelashes"]
-_select_groups_map["TEETH"] = ["helper-upper-teeth","helper-lower-teeth"]
-_select_groups_map["TONGUE"] = ["helper-tongue"]
-_select_groups_map["GENITALS"] = ["helper-genital"]
-_select_groups_map["HELPERS"] = ["HelperGeometry"]
+_extractGroupDescription = "You can create a new mesh based on a vertex group in an imported human. Note that this is only possible if you imported with \"detailed helpers\". Without that, the only group possible to extract will be \"body\" and \"helpers\"."
+
+def EvaluateGroupsCallback(self, context):
+    _extractGroup = []
+
+    if hasattr (context, "object"):
+        (meshtype, jlines) = _loadMeshJson(context.object)
+        cnt = 1
+        for gname in jlines["select_groups"]:
+            gl_name = gname.lower()
+            _extractGroup.append((gname, gl_name.capitalize(), "Create clothes from " + gl_name, cnt))
+            cnt += 1
+    return (_extractGroup)
 
 class MHC_OT_ExtractClothesOperator(bpy.types.Operator):
     """Extract one helper vertex group as clothes"""
     bl_idname = "makeclothes.extract_clothes"
     bl_label = "Extract helper as clothes"
     bl_options = {'REGISTER', 'UNDO'}
+
+    extract: bpy.props.EnumProperty(items=EvaluateGroupsCallback, name="Extract", description=_extractGroupDescription)
 
     @classmethod
     def poll(self, context):
@@ -37,18 +42,27 @@ class MHC_OT_ExtractClothesOperator(bpy.types.Operator):
                 return True
         return False
 
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=300)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, 'extract')
+
     def execute(self, context):
 
         humanObj = context.active_object
         scn = context.scene
 
-        what = scn.MhExtractClothes
+        (meshtype, jlines) = _loadMeshJson(humanObj)
+        what = self.extract
 
-        if not what in _select_groups_map:
+        if not what in jlines["select_groups"]:
             self.report({'ERROR'}, "No such group: " + what)
             return {'FINISHED'}
 
-        groupNames = _select_groups_map[what]
+        groupNames = jlines["select_groups"][what]
 
         if len(groupNames) < 1:
             self.report({'ERROR'}, what + " is empty")

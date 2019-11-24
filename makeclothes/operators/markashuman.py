@@ -13,7 +13,14 @@ class MHC_OT_MarkAsHumanOperator(bpy.types.Operator):
     def poll(self, context):
         return context.active_object is not None
 
+    def getMeshType(self, humanObj):
+        for group in humanObj.vertex_groups:
+            if group.name.startswith('_mesh_'):
+                return group.name[6:]
+        return "hm08"
+
     def execute(self, context):
         context.active_object.MhObjectType = "Basemesh"
-        self.report({'INFO'}, "Object marked as human")
+        context.active_object.MhMeshType = self.getMeshType(context.active_object)
+        self.report({'INFO'}, "Object marked as human, mesh type is " + context.active_object.MhMeshType)
         return {'FINISHED'}

@@ -48,12 +48,14 @@ def checkAllVGroupsInFirstExistsInSecond(firstObj, secondObj):
     for vg in secondObj.vertex_groups:
         secondObjVGroups.append(vg.name)
 
+    hint = ""
+    b = True
     for name in firstObjVGroups:
         if not name in secondObjVGroups:
-            print("The " + name + " group is missing")
-            return False
+            hint += name + "\n" # do all to create a list
+            b = False
 
-    return True
+    return (b, hint)
 
 ### --- FACE CHECKS --- ###
 
@@ -159,8 +161,10 @@ def checkSanityHuman(context):
 
 # checkSanityClothes
 # do all tests on a piece of cloth (called when creating the clothes, but also for a check)
+#
+# allowed to be called with second argument for checks between two objects
 
-def checkSanityClothes(obj):
+def checkSanityClothes(obj, humanobj=None):
     error = ""
     info  = ""
 
@@ -213,6 +217,14 @@ def checkSanityClothes(obj):
         error += "This object has vertices which belong non-existing vertex groups,\n" + hint
         icon = "\002"
     info += icon + "No vertex is assigned to a non existing group.\n"
+
+    if humanobj is not None:
+        icon = "\001"
+        (b, hint) = checkAllVGroupsInFirstExistsInSecond(obj, humanobj)
+        if not b:
+            error += "This object has vertex groups which are missing on human,\nThese groups are:\n" + hint
+            icon = "\002"
+        info += icon + "All vertex groups exist on human.\n"
 
     icon = "\001"
     (b, cnt, hint) = checkNumberOfUVMaps(obj)

@@ -5,6 +5,21 @@ import mathutils
 from mathutils import Vector
 
 
+def _loadMeshJson(obj):
+    meshtype = "hm08"                   # preset mesh  name
+    if hasattr (obj, "MhMeshType"):
+        meshtype = obj.MhMeshType
+    meshfilename =  meshtype + ".config"
+    meshfile = os.path.join(os.path.dirname(__file__), "data", meshfilename)
+    try:
+        cfile = open (meshfile, "r")
+    except IOError:
+        return (meshtype, "")
+    else:
+        jlines = json.load(cfile)
+        cfile.close()
+        return (meshtype, jlines)
+
 def _distance(co1, co2):
     xd = co1[0] - co2[0]
     yd = co1[1] - co2[1]
@@ -114,20 +129,27 @@ class MakeClothes():
         self.exportLicense = license
         self.exportAuthor = author
         self.exportDescription = description
-
-        self.baseMeshType = "hm08"              # TODO must be flexible later, maybe "none" is possible, depends on additional information
-                                                # we have to supply for other meshes, but then we need presets for everything
-        self.bodyPart = "Head"                  # TODO must be flexible later
-
         self.scales = [1.0, 1.0, 1.0]           # x_scale, y_scale, z_scale
-
         self.deleteVerticesOutput = ""
-
         self.clothesmesh.getAdditionalIndices() 
         self.clothesmesh.getUVforExport()       # method to assign UVs to mesh
 
-        self.getMeshInformation()    
-        self.findClosestVertices()
+    #
+    # here the work is done. __init__ cannot provide proper return codes
+    #
+    def make(self):
+        self.bodyPart = "Head"                  # TODO must be flexible later
+
+        (self.baseMeshType, self.meshConfig) = _loadMeshJson(self.humanObj)    # load parameters for scales according to mesh
+        if len(self.meshConfig) == 0:
+            return (False, "Cannot open configuration file for " + self.baseMeshType)
+
+        # also the groups have been tested we should avoid going on with an unknown group
+        #
+        (b, vgroupname) = self.findClosestVertices()
+        if b is False:
+            return (False, "Cannot create search tree for group " + vgroupname)
+
         self.findBestFaces()
         self.findWeightsAndDistances()
         self.evaluateDeleteVertices()
@@ -150,13 +172,23 @@ class MakeClothes():
         self.scales[2] = self.humanmesh.getScale (dims['ymin'], dims['ymax'], 1) # scales-index
         self.scales[1] = self.humanmesh.getScale (dims['zmin'], dims['zmax'], 2) # y and z are changed
 
-        self.writeMhClo()
-        self.writeObj()
-        self.writeMhMat()
+        #
+        # write the output files and check for errors
+        #
+        (b, hint) = self.writeMhClo()
+        if b is False:
+            return (False, hint)
+        (b, hint) = self.writeObj()
+        if b is False:
+            return (False, hint)
+        (b, hint) = self.writeMhMat()
+        if b is False:
+            return (False, hint)
 
         if True:
             self.writeDebug()
             self.selectHumanVertices()
+        return (True, "")
 
     def findClosestVertices(self):
         for vgroupIdx in self.clothesmesh.vertexGroupNames.keys():
@@ -166,27 +198,30 @@ class MakeClothes():
 
             kdtree = self.humanmesh.vertexGroupKDTree(vgroupName)  # this function I defined in mhmesh.py
             i = 0
-            if type(kdtree) is not bool:
-                print(type(kdtree))  # well that's one method to only allow a tree, maybe not the best, error treatment should look different :P
-                for vertex in clothesVertices:
-                    # Find the closest 3 vertices, we consider 0.0001 as an exact match
-                    vertexMatch = _VertexMatch(i, vertex[0], vertex[1], vertex[2])  # idx x y z
-                    i = i + 1
-                    hCoord = []
-                    j = 0
-                    exact = False
-                    for (co, index, dist) in kdtree.find_n(vertex, 3):
-                        if dist < 0.0001:
-                            vertexMatch.markExact(index)
-                            exact = True
-                        elif exact is False:
-                            vertexMatch.closestHumanVertexIndices[j] = index
-                            vertexMatch.closestHumanVertexCoordinates[j] = co
-                            hCoord.append(self.humanmesh.allVertexCoordinates[index])
-                            j += 1
-                    if exact is False:
-                        vertexMatch.closestHumanVertexCoordinates = hCoord
-                    self.vertexMatches.append(vertexMatch)
+            if type(kdtree) is bool:    # in case of error a bool is returned
+                return (False, vgroupName)
+
+            for vertex in clothesVertices:
+                # Find the closest 3 vertices, we consider 0.0001 as an exact match
+                vertexMatch = _VertexMatch(i, vertex[0], vertex[1], vertex[2])  # idx x y z
+                i = i + 1
+                hCoord = []
+                j = 0
+                exact = False
+                for (co, index, dist) in kdtree.find_n(vertex, 3):
+                    if dist < 0.0001:
+                        vertexMatch.markExact(index)
+                        exact = True
+                    elif exact is False:
+                        vertexMatch.closestHumanVertexIndices[j] = index
+                        vertexMatch.closestHumanVertexCoordinates[j] = co
+                        hCoord.append(self.humanmesh.allVertexCoordinates[index])
+                        j += 1
+                if exact is False:
+                    vertexMatch.closestHumanVertexCoordinates = hCoord
+                self.vertexMatches.append(vertexMatch)
+
+        return (True, "")
 
     def findBestFaces(self):
         # In this method we will go through the vertexmatches and if needed switch which vertices are selected so that all
@@ -324,14 +359,6 @@ class MakeClothes():
         if not os.path.exists(self.dirName):
             os.makedirs(self.dirName)
 
-    def getMeshInformation(self):
-        currentdir = os.path.dirname(__file__)
-        self.confName =  os.path.join(currentdir, "data", self.baseMeshType + ".config")
-        print ( self.confName)
-        cfile = open (self.confName, "r")
-        self.meshConfig = json.load(cfile)
-        cfile.close()
-
     def writeDebug(self):
         outputFile = os.path.join(self.dirName, self.cleanedName + ".debug.csv")
         with open(outputFile, "w") as f:
@@ -425,36 +452,41 @@ class MakeClothes():
 
     def writeMhClo(self):
         outputFile = os.path.join(self.dirName,self.cleanedName + ".mhclo")
-        with open(outputFile,"w") as f:
-            f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
-            f.write("# author: "  + self.exportAuthor + "\n")
-            f.write("# license: " + self.exportLicense + "\n#\n")
-            f.write("# description: " + self.exportDescription + "\n#\n")
-            f.write("basemesh " + self.baseMeshType + "\n\n")
-            f.write("# Basic info:\n")
-            f.write("name " + self.exportName + "\n")
+        try:
+            with open(outputFile,"w") as f:
+                f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
+                f.write("# author: "  + self.exportAuthor + "\n")
+                f.write("# license: " + self.exportLicense + "\n#\n")
+                f.write("# description: " + self.exportDescription + "\n#\n")
+                f.write("basemesh " + self.baseMeshType + "\n\n")
+                f.write("# Basic info:\n")
+                f.write("name " + self.exportName + "\n")
 
-            # add the tags 
-            #
-            for tag in self.clothesObj.MhClothesTags.split(","):
-                f.write("tag " + tag + "\n")
+                # add the tags
+                #
+                for tag in self.clothesObj.MhClothesTags.split(","):
+                    if len(tag) > 0:
+                        f.write("tag " + tag + "\n")
 
-            f.write("obj_file " + self.cleanedName + ".obj\n")
-            f.write("material " + self.cleanedName + ".mhmat" + "\n\n")
-            f.write("uuid " + str(uuid.uuid4()) + "\n")
-            f.write("x_scale " + str(self.minmax['xmin']) + " " + str(self.minmax['xmax']) + " " + str(round(self.scales[0], 4)) + "\n")
-            f.write("y_scale " + str(self.minmax['ymin']) + " " + str(self.minmax['ymax']) + " " + str(round(self.scales[1], 4)) + "\n")
-            f.write("z_scale " + str(self.minmax['zmin']) + " " + str(self.minmax['zmax']) + " " + str(round(self.scales[2], 4)) + "\n")
-            f.write("z_depth " + str(self.clothesObj.MhZDepth) + "\n\n")
-            f.write("# Vertex info:\n")
-            f.write("verts 0\n")
-            for vm in self.vertexMatches:
-                f.write(str(vm) + "\n")
+                f.write("obj_file " + self.cleanedName + ".obj\n")
+                f.write("material " + self.cleanedName + ".mhmat" + "\n\n")
+                f.write("uuid " + str(uuid.uuid4()) + "\n")
+                f.write("x_scale " + str(self.minmax['xmin']) + " " + str(self.minmax['xmax']) + " " + str(round(self.scales[0], 4)) + "\n")
+                f.write("y_scale " + str(self.minmax['ymin']) + " " + str(self.minmax['ymax']) + " " + str(round(self.scales[1], 4)) + "\n")
+                f.write("z_scale " + str(self.minmax['zmin']) + " " + str(self.minmax['zmax']) + " " + str(round(self.scales[2], 4)) + "\n")
+                f.write("z_depth " + str(self.clothesObj.MhZDepth) + "\n\n")
+                f.write("# Vertex info:\n")
+                f.write("verts 0\n")
+                for vm in self.vertexMatches:
+                    f.write(str(vm) + "\n")
 
-            # write the delete vertice numbers of the basemesh
-            if self.deleteVerticesOutput != "":
-                f.write ("\ndelete_verts\n" + self.deleteVerticesOutput + "\n")
-
+                # write the delete vertice numbers of the basemesh
+                if self.deleteVerticesOutput != "":
+                    f.write ("\ndelete_verts\n" + self.deleteVerticesOutput + "\n")
+                f.close()
+                return (True, "")
+        except EnvironmentError:
+            return (False, "Cannot write " + outputFile)
 
     def writeObj(self):
         # Yes, I'm aware there is a wavefront exporter in the blender API already. However, we need to make
@@ -467,60 +499,70 @@ class MakeClothes():
         #
         # scale, rotation and origin are not necessary because everything has be applied before
         #
-        with open(outputFile,"w") as f:
-            f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
-            f.write("# author: "  + self.exportAuthor + "\n")
-            f.write("# license: " + self.exportLicense + "\n#\n")
-            for v in mesh.vertices:
-                f.write("v %.4f %.4f %.4f\n" % (v.co[0], v.co[2], -v.co[1]))
+        try:
+            with open(outputFile,"w") as f:
+                f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
+                f.write("# author: "  + self.exportAuthor + "\n")
+                f.write("# license: " + self.exportLicense + "\n#\n")
+                for v in mesh.vertices:
+                    f.write("v %.4f %.4f %.4f\n" % (v.co[0], v.co[2], -v.co[1]))
 
-            # check if we have a texture
-            # in this case we create vt and f a/b lines per vertex
-            # else create only f lines with one parameter per vertex
-            #
-            if self.clothesmesh.has_uv:
-                texVerts = self.clothesmesh.texVerts
-                nTexVerts = len(texVerts)
-                for vtn in range(nTexVerts):
-                    uv = texVerts[vtn]
-                    f.write("vt %.4f %.4f\n" % (uv[0], uv[1]))
+                # check if we have a texture
+                # in this case we create vt and f a/b lines per vertex
+                # else create only f lines with one parameter per vertex
+                #
+                if self.clothesmesh.has_uv:
+                    texVerts = self.clothesmesh.texVerts
+                    nTexVerts = len(texVerts)
+                    for vtn in range(nTexVerts):
+                        uv = texVerts[vtn]
+                        f.write("vt %.4f %.4f\n" % (uv[0], uv[1]))
 
-                uvFaceVerts = self.clothesmesh.uvFaceVerts
-                for polygon in mesh.polygons:
-                    uvVerts = uvFaceVerts[polygon.index]
-                    line = ["f"]
-                    for n,v in enumerate(polygon.vertices):
-                        (vt, uv) = uvVerts[n]
-                        line.append("%d/%d" % (v+1, vt+1))
-                    f.write(" ".join(line))
-                    f.write("\n")
+                    uvFaceVerts = self.clothesmesh.uvFaceVerts
+                    for polygon in mesh.polygons:
+                        uvVerts = uvFaceVerts[polygon.index]
+                        line = ["f"]
+                        for n,v in enumerate(polygon.vertices):
+                            (vt, uv) = uvVerts[n]
+                            line.append("%d/%d" % (v+1, vt+1))
+                        f.write(" ".join(line))
+                        f.write("\n")
 
-            else:
-                for p in mesh.polygons:
-                    f.write("f")
-                    for i in p.vertices:
-                        f.write(" %d" % (i + 1))
-                    f.write("\n")
+                else:
+                    for p in mesh.polygons:
+                        f.write("f")
+                        for i in p.vertices:
+                            f.write(" %d" % (i + 1))
+                        f.write("\n")
+                f.close()
+                return (True, "")
+        except EnvironmentError:
+            return (False, "Cannot write " + outputFile)
 
     def writeMhMat(self):
         mhmat = MHMaterial(self.clothesObj)
         outputFile = os.path.join(self.dirName,self.cleanedName + ".mhmat")
-        with open(outputFile,"w") as f:
-            f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
-            f.write("# author: " + self.exportAuthor + "\n")
-            f.write("# license: " + self.exportLicense + "\n#\n")
-            f.write("name " + self.exportName + " material\n\n")
+        try:
+            with open(outputFile,"w") as f:
+                f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
+                f.write("# author: " + self.exportAuthor + "\n")
+                f.write("# license: " + self.exportLicense + "\n#\n")
+                f.write("name " + self.exportName + " material\n\n")
 
-            f.write("// Color shading attributes\n")
-            f.write("diffuseColor  %.4f %.4f %.4f\n" % (mhmat.diffuseColor[0], mhmat.diffuseColor[1], mhmat.diffuseColor[2]))
-            f.write("specularColor  0.8 0.8 0.8\n")
-            f.write("shininess %.4f\n" % mhmat.shininess)
-            f.write("opacity 1\n\n")
+                f.write("// Color shading attributes\n")
+                f.write("diffuseColor  %.4f %.4f %.4f\n" % (mhmat.diffuseColor[0], mhmat.diffuseColor[1], mhmat.diffuseColor[2]))
+                f.write("specularColor  0.8 0.8 0.8\n")
+                f.write("shininess %.4f\n" % mhmat.shininess)
+                f.write("opacity 1\n\n")
 
-            f.write("// Textures and properties\n\n")
+                f.write("// Textures and properties\n\n")
 
-            if mhmat.diffuseTexture:
-                bn = os.path.basename(mhmat.diffuseTexture)
-                dest = os.path.join(self.dirName, bn)
-                shutil.copyfile(mhmat.diffuseTexture, dest)
-                f.write("diffuseTexture " + bn)
+                if mhmat.diffuseTexture:
+                    bn = os.path.basename(mhmat.diffuseTexture)
+                    dest = os.path.join(self.dirName, bn)
+                    shutil.copyfile(mhmat.diffuseTexture, dest)
+                    f.write("diffuseTexture " + bn)
+                f.close()
+                return (True, "")
+        except EnvironmentError:
+            return (False, "Cannot write " + outputFile)
