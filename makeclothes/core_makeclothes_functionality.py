@@ -4,11 +4,17 @@ import json, math, re, os, uuid, shutil
 import mathutils
 from mathutils import Vector
 
+_knownMeshes = {}                       # place to hold all jsons of meshes, used not to reload them again and again
+                                        # normally there will be only a few meshes on disk
 
 def _loadMeshJson(obj):
     meshtype = "hm08"                   # preset mesh  name
     if hasattr (obj, "MhMeshType"):
         meshtype = obj.MhMeshType
+
+    if meshtype in _knownMeshes:        # check if we already have the mesh
+        return (meshtype, _knownMeshes[meshtype])
+
     meshfilename =  meshtype + ".config"
     meshfile = os.path.join(os.path.dirname(__file__), "data", meshfilename)
     try:
@@ -18,6 +24,7 @@ def _loadMeshJson(obj):
     else:
         jlines = json.load(cfile)
         cfile.close()
+        _knownMeshes[meshtype] = jlines     # we got a new mesh
         return (meshtype, jlines)
 
 def _distance(co1, co2):
