@@ -71,6 +71,8 @@ def extraProperties():
         bpy.types.Object.MhClothesDesc = StringProperty(name="Description", description="", default="no description")
     if not hasattr(bpy.types.Object, "MhClothesTags"):
         bpy.types.Object.MhClothesTags = StringProperty(name="Tags connected to the object", description="comma-separated list of tags", default = "")
+    if not hasattr(bpy.types.Object, "MhOffsetScale"):
+        bpy.types.Object.MhOffsetScale = StringProperty(name="OffSet Scale", description="Name of body part, where clothes are scaled to", default = "Torso")
     if not hasattr(bpy.types.Object, "MhDeleteGroup"):
         bpy.types.Object.MhDeleteGroup = StringProperty(name="Delete Group",
                 description="The group contains the vertices to be deleted on the human which are hidden by your piece of cloth", default="Delete")

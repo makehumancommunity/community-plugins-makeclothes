@@ -70,6 +70,8 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
                 row = col.row()
                 row.label(text="Z-Depth")
                 row.prop(obj, 'MhZDepth', text="")
+                produceBox.label(text="Scaling on: "+ obj.MhOffsetScale)
+                produceBox.operator("makeclothes.offset_scaling", text="Change offset scaling")
                 produceBox.label(text="Delete-Group on Base-Mesh")
                 produceBox.prop(obj, 'MhDeleteGroup', text="")
                 produceBox.operator("makeclothes.create_clothes", text="Make clothes")

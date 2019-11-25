@@ -11,6 +11,7 @@ from .checkclothes import MHC_OT_CheckClothesOperator
 from .createclothes import MHC_OT_CreateClothesOperator
 from .checkhuman import MHC_OT_CheckHumanOperator
 from .tagselector import MHC_OT_TagSelector
+from .offsetscaling import MHC_OT_GetOffsetScaling
 
 OPERATOR_CLASSES = [
     MHC_OT_ExtractClothesOperator,
@@ -20,7 +21,8 @@ OPERATOR_CLASSES = [
     MHC_OT_CheckClothesOperator,
     MHC_OT_CreateClothesOperator,
     MHC_OT_CheckHumanOperator,
-    MHC_OT_TagSelector
+    MHC_OT_TagSelector,
+    MHC_OT_GetOffsetScaling
 ]
 
 __all__ = [
@@ -32,5 +34,6 @@ __all__ = [
     "MHC_OT_CreateClothesOperator",
     "MHC_OT_CheckHumanOperator",
     "MHC_OT_TagSelector",
+    "MHC_OT_GetOffsetScaling",
     "OPERATOR_CLASSES"
 ]

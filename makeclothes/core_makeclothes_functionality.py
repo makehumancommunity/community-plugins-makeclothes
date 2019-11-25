@@ -148,11 +148,17 @@ class MakeClothes():
     # here the work is done. __init__ cannot provide proper return codes
     #
     def make(self):
-        self.bodyPart = "Head"                  # TODO must be flexible later
+
+        self.bodyPart = self.clothesObj.MhOffsetScale       # get the scalings
+        if len(self.bodyPart) == 0:
+            return (False, "No scaling defined")
 
         (self.baseMeshType, self.meshConfig) = _loadMeshJson(self.humanObj)    # load parameters for scales according to mesh
         if len(self.meshConfig) == 0:
             return (False, "Cannot open configuration file for " + self.baseMeshType)
+
+        if self.bodyPart not in  self.meshConfig["dimensions"]:                 # check if we have the scalings
+            return (False, "Cannot evaluate offsets for " + self.bodyPart)
 
         # also the groups have been tested we should avoid going on with an unknown group
         #
