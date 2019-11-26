@@ -46,18 +46,22 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
             return {'FINISHED'}
 
         #
+        # set mode to object, especially if you are still in edit mode
+        # (otherwise last changes are not used)
+        # since blender could be in multi-editmode we have to do that on both
+        # objects, before we do transformation, otherwise transformation is
+        # in wrong context
+        #
         # apply all transformations on both objects, otherwise it is too hard
         # to determine problems.
         #
         context.view_layer.objects.active = humanObj
+        bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
         context.view_layer.objects.active = clothesObj
+        bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
-        #
-        # set mode to object, especially if you are still in edit mode
-        # (otherwise last changes are not used
-        bpy.ops.object.mode_set(mode='OBJECT')
 
         rootDir = getClothesRoot()
         name = clothesObj.MhClothesName
