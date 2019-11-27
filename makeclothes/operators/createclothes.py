@@ -40,14 +40,9 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
 
         clothesObj = context.active_object
 
-        (b, info, error) = checkSanityClothes(clothesObj, humanObj)
-        if b:
-            bpy.ops.info.infobox('INVOKE_DEFAULT', title="Check Clothes", info=info, error=error)
-            return {'FINISHED'}
-
         #
         # set mode to object, especially if you are still in edit mode
-        # (otherwise last changes are not used)
+        # (otherwise last changes are not used, even assigned groups will not work)
         # since blender could be in multi-editmode we have to do that on both
         # objects, before we do transformation, otherwise transformation is
         # in wrong context
@@ -62,6 +57,10 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
         bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
+        (b, info, error) = checkSanityClothes(clothesObj, humanObj)
+        if b:
+            bpy.ops.info.infobox('INVOKE_DEFAULT', title="Check Clothes", info=info, error=error)
+            return {'FINISHED'}
 
         rootDir = getClothesRoot()
         name = clothesObj.MhClothesName

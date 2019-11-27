@@ -41,6 +41,7 @@ class _VertexMatch():
     def __init__(self, clothesVertexIndex, clothesVertexX, clothesVertexY, clothesVertexZ):
         self.index = clothesVertexIndex
         self.exactMatch = None
+        self.rigidMatch = None
         self.closestHumanVertexIndices = [-1, -1, -1]
         self.weights = [0.0, 0.0, 0.0]
         self.distance = [0.0, 0.0, 0.0]
@@ -51,6 +52,9 @@ class _VertexMatch():
 
     def markExact(self, humanVertexIndex):
         self.exactMatch = humanVertexIndex
+
+    def markRigid(self, humanVertexIndex):
+        self.rigidMatch = humanVertexIndex
 
     def setClosestIndices(self, v1, v2, v3, v1c = None, v2c = None, v3c = None ):
         self.closestHumanVertexIndices[0] = v1
@@ -176,7 +180,7 @@ class MakeClothes():
         self.setupTargetDirectory()
 
         # 
-        # get dimensions of the selected BodyPart
+        # get dimensions of the selected BodyPart (values from json are blender values)
         #
         dims = self.meshConfig["dimensions"][self.bodyPart]
         self.minmax = {
@@ -212,10 +216,32 @@ class MakeClothes():
             clothesVertices = self.clothesmesh.vertexGroupVertices[vgroupIdx]
             vertexIndexMap = self.clothesmesh.vertexGroupVertexIndexMap[vgroupIdx]
 
-            kdtree = self.humanmesh.vertexGroupKDTree(vgroupName)  # this function I defined in mhmesh.py
-            i = 0
-            if type(kdtree) is bool:    # in case of error a bool is returned
+            # determine kd tree, also delivers number of vertices per group
+            # 3 means rigid group, then an array is given
+            #
+            (size, kdtree) = self.humanmesh.vertexGroupKDTree(vgroupName) 
+            if size == 0:    # empty group
                 return (False, vgroupName)
+
+            i = 0
+
+            #
+            # special code for rigid group
+            #
+            if size == 3:
+                for vertex in clothesVertices:
+                    vertexMatch = _VertexMatch(i, vertex[0], vertex[1], vertex[2])  # idx x y z
+                    i = i + 1
+                    hCoord = []
+                    j = 0
+                    for vert in kdtree:     # an array in this case
+                        vertexMatch.markRigid(vert.index)
+                        vertexMatch.closestHumanVertexIndices[j] = vert.index
+                        vertexMatch.closestHumanVertexCoordinates[j] = vert.co
+                        hCoord.append(self.humanmesh.allVertexCoordinates[vert.index])
+                        j += 1
+                    self.vertexMatches.append(vertexMatch)
+                continue
 
             for vertex in clothesVertices:
                 # Find the closest 3 vertices, we consider 0.0001 as an exact match
@@ -243,7 +269,7 @@ class MakeClothes():
         # In this method we will go through the vertexmatches and if needed switch which vertices are selected so that all
         # vertices belong to the same face.
         for vm in self.vertexMatches:
-            if not vm.exactMatch:
+            if not vm.exactMatch and not vm.rigidMatch:
                 faceMatches = []
                 maxScore = 1
                 for i in [0, 1, 2]:
@@ -488,8 +514,8 @@ class MakeClothes():
                 f.write("material " + self.cleanedName + ".mhmat" + "\n\n")
                 f.write("uuid " + str(uuid.uuid4()) + "\n")
                 f.write("x_scale " + str(self.minmax['xmin']) + " " + str(self.minmax['xmax']) + " " + str(round(self.scales[0], 4)) + "\n")
-                f.write("y_scale " + str(self.minmax['ymin']) + " " + str(self.minmax['ymax']) + " " + str(round(self.scales[1], 4)) + "\n")
-                f.write("z_scale " + str(self.minmax['zmin']) + " " + str(self.minmax['zmax']) + " " + str(round(self.scales[2], 4)) + "\n")
+                f.write("y_scale " + str(self.minmax['zmin']) + " " + str(self.minmax['zmax']) + " " + str(round(self.scales[1], 4)) + "\n")
+                f.write("z_scale " + str(self.minmax['ymin']) + " " + str(self.minmax['ymax']) + " " + str(round(self.scales[2], 4)) + "\n")
                 f.write("z_depth " + str(self.clothesObj.MhZDepth) + "\n\n")
                 f.write("# Vertex info:\n")
                 f.write("verts 0\n")

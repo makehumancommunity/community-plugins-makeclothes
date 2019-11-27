@@ -150,6 +150,12 @@ class MHMesh:
 
                 size = len(tmp_varray)
 
+                #
+                # in case of a rigid group
+                #
+                if size == 3:
+                    return (size, tmp_varray)
+
                 # in case we have elements create the kd-tree and balance it
                 #
                 if size > 0:
@@ -157,9 +163,9 @@ class MHMesh:
                     for vertex in tmp_varray:
                         kd.insert(vertex.co, vertex.index)
                     kd.balance()
-                    return (kd)
+                    return (size, kd)
 
-        return False
+        return (0, None)
 
     # 
     # generates special indices to speed up searches and also used for UV-mapping

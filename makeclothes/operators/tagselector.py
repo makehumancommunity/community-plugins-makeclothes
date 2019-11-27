@@ -103,7 +103,7 @@ class MHC_OT_TagSelector(bpy.types.Operator):
         #
         addtags = ",".join(elem.strip() for elem in sc.MHAdditionalTags.split(","))
 
-        for tag in (sc.MHTags_gender, sc.MHTags_dresscode, sc.MHTags_activity, sc.MHTags_activity, sc.MHTags_period, sc.MHTags_type, addtags):
+        for tag in (sc.MHTags_gender, sc.MHTags_dresscode, sc.MHTags_activity, sc.MHTags_period, sc.MHTags_type, addtags):
             if tag != "none" and len(tag) > 0:
                 if len(context.object.MhClothesTags) > 0:
                     context.object.MhClothesTags += ","
