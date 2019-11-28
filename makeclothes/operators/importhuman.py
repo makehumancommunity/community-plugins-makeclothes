@@ -1,9 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import bpy, bmesh
+import bpy
 from mathutils import Matrix
-from bpy_extras.io_utils import (axis_conversion, ImportHelper)
+from bpy_extras.io_utils import axis_conversion, ImportHelper
 from bpy.props import StringProperty
 from io_scene_obj import import_obj
 

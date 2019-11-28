@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import bpy, bmesh, os
-from ..sanitychecks import *
+import bpy
+import os
+from ..sanitychecks import checkSanityHuman, checkSanityClothes
 from ..core_makeclothes_functionality import MakeClothes
 from ..utils import getClothesRoot
 

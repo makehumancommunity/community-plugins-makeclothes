@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import bpy, bmesh
+import bpy
 
 class MHC_OT_MarkAsHumanOperator(bpy.types.Operator):
     """Extract one helper vertex group as clothes"""

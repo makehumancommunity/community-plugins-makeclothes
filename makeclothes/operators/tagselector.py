@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import bpy, bmesh
+import bpy
 from ..extraproperties import mh_tags
 
 class MHC_OT_TagSelector(bpy.types.Operator):

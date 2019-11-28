@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import numpy, pprint, mathutils
+import numpy as np
+import mathutils
 
 class MHMesh:
 
@@ -77,7 +78,7 @@ class MHMesh:
         # This somewhat cumbersome routine is here to ensure that vertex.index equals index in the
         # resulting numpy array. It is theoretically possible that the index a vertex says it has
         # is not the same as its position in the object's array with vertices
-        self.allVertexCoordinates = numpy.zeros((len(self._seedVertexCoordinates), 3))
+        self.allVertexCoordinates = np.zeros((len(self._seedVertexCoordinates), 3))
         i = 0
         while i < len(self._seedVertexCoordinates):
             idx = self._seedVertexCoordinates[i][0]
