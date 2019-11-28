@@ -137,7 +137,8 @@ class MakeClothes():
             self.clothesmesh = MHMesh(clothesObj)
         self.humanmesh = MHMesh(humanObj)
 
-        self.vertexMatches = []
+        # predefine size of the array needed 
+        self.vertexMatches = [None for dummy in range(len(clothesObj.data.vertices))] 
         self.exportName = exportName
         self.exportRoot = exportRoot
         self.exportLicense = license
@@ -214,7 +215,6 @@ class MakeClothes():
         for vgroupIdx in self.clothesmesh.vertexGroupNames.keys():
             vgroupName = self.clothesmesh.vertexGroupNames[vgroupIdx]
             clothesVertices = self.clothesmesh.vertexGroupVertices[vgroupIdx]
-            vertexIndexMap = self.clothesmesh.vertexGroupVertexIndexMap[vgroupIdx]
 
             # determine kd tree, also delivers number of vertices per group
             # 3 means rigid group, then an array is given
@@ -223,15 +223,12 @@ class MakeClothes():
             if size == 0:    # empty group
                 return (False, vgroupName)
 
-            i = 0
-
             #
             # special code for rigid group
             #
             if size == 3:
                 for vertex in clothesVertices:
-                    vertexMatch = _VertexMatch(i, vertex[0], vertex[1], vertex[2])  # idx x y z
-                    i = i + 1
+                    vertexMatch = _VertexMatch(vertex[0], vertex[1], vertex[2], vertex[3])  # idx x y z
                     hCoord = []
                     j = 0
                     for vert in kdtree:     # an array in this case
@@ -240,17 +237,16 @@ class MakeClothes():
                         vertexMatch.closestHumanVertexCoordinates[j] = vert.co
                         hCoord.append(self.humanmesh.allVertexCoordinates[vert.index])
                         j += 1
-                    self.vertexMatches.append(vertexMatch)
+                    self.vertexMatches[vertex[0]] = vertexMatch             # put element to predefined location
                 continue
 
             for vertex in clothesVertices:
                 # Find the closest 3 vertices, we consider 0.0001 as an exact match
-                vertexMatch = _VertexMatch(i, vertex[0], vertex[1], vertex[2])  # idx x y z
-                i = i + 1
+                vertexMatch = _VertexMatch(vertex[0], vertex[1], vertex[2], vertex[3])  # idx x y z
                 hCoord = []
                 j = 0
                 exact = False
-                for (co, index, dist) in kdtree.find_n(vertex, 3):
+                for (co, index, dist) in kdtree.find_n(vertex[1:], 3):
                     if dist < 0.0001:
                         vertexMatch.markExact(index)
                         exact = True
@@ -261,8 +257,7 @@ class MakeClothes():
                         j += 1
                 if exact is False:
                     vertexMatch.closestHumanVertexCoordinates = hCoord
-                self.vertexMatches.append(vertexMatch)
-
+                self.vertexMatches[vertex[0]] = vertexMatch
         return (True, "")
 
     def findBestFaces(self):
