@@ -1,6 +1,11 @@
 from .mhmesh import MHMesh
 from .material import MHMaterial
-import json, math, re, os, uuid, shutil
+import json
+import math
+import re
+import os
+import uuid
+import shutil
 import mathutils
 from mathutils import Vector
 
