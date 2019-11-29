@@ -1,14 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import bpy, bmesh
+import bpy
 from mathutils import Matrix
-from bpy_extras.io_utils import (axis_conversion, ImportHelper)
+from bpy_extras.io_utils import axis_conversion, ImportHelper
 from bpy.props import StringProperty
 from io_scene_obj import import_obj
 
 class MHC_OT_ImportHumanOperator(bpy.types.Operator, ImportHelper):
-    """Import a basemesh used for human"""
+    """Import a basemesh used for human, make sure mesh is not rotated and face is pointing to front view"""
     bl_idname = "makeclothes.importhuman"
     bl_label = "Import a mesh as human"
     bl_options = {'REGISTER', 'UNDO'}
