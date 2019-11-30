@@ -29,7 +29,6 @@ class MHMesh:
         self.vertexGroupVertices = dict()
         self.vertexGroupNames = dict()
         self._seedGroups = dict()
-        self._seedVertexCoordinates = []
         self.vertPolygons = {}  # will contain all polygons connected to a vertex, needed for efficiency (bestFace search)
 
         # additional helper indices, filled by getAdditionalIndices
@@ -53,11 +52,6 @@ class MHMesh:
 
         for vertex in self.data.vertices:
             self.vertPolygons[vertex.index] = []    # supply an index to be filled, will contain all polygons connected to a vertex
-            #i = int(vertex.index)
-            #x = float(vertex.co[0])
-            #y = float(vertex.co[1])
-            #z = float(vertex.co[2])
-            #self._seedVertexCoordinates.append( [i, x, y, z] )
             for group in vertex.groups:
                 groupIndex = int(group.group)
                 if not int(groupIndex) in self.vertexGroupNames:
@@ -75,11 +69,6 @@ class MHMesh:
             for vertex in polygon.vertices:
                 self.vertPolygons[vertex].append(polygon)
 
-        # This somewhat cumbersome routine is here to ensure that vertex.index equals index in the
-        # resulting numpy array. It is theoretically possible that the index a vertex says it has
-        # is not the same as its position in the object's array with vertices
-        # self.allVertexCoordinates = np.zeros((len(self._seedVertexCoordinates), 3))
-
         # Get the count of vertices in the object
         vertexCount = len(self.data.vertices)
 
@@ -89,17 +78,6 @@ class MHMesh:
         # Use the foreach_get method, returning a flat array, which needs to be reshaped
         self.data.vertices.foreach_get('co', self.allVertexCoordinates)
         self.allVertexCoordinates.shape = (vertexCount, 3)
-
-        #i = 0
-        #while i < len(self._seedVertexCoordinates):
-        #    idx = self._seedVertexCoordinates[i][0]
-        #    x = self._seedVertexCoordinates[i][1]
-        #    y = self._seedVertexCoordinates[i][2]
-        #    z = self._seedVertexCoordinates[i][3]
-        #    self.allVertexCoordinates[idx][0] = x
-        #    self.allVertexCoordinates[idx][1] = y
-        #    self.allVertexCoordinates[idx][2] = z
-        #    i = i + 1
 
         for groupIndex in self._seedGroups.keys():
             self.vertexGroupVertices[groupIndex] = self._seedGroups[groupIndex]
