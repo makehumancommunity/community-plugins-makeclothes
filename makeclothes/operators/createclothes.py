@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import bpy, bmesh, os
-from ..sanitychecks import *
+import bpy
+import os
+from ..sanitychecks import checkSanityHuman, checkSanityClothes
 from ..core_makeclothes_functionality import MakeClothes
 from ..utils import getClothesRoot
 
@@ -50,9 +51,20 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
         # apply all transformations on both objects, otherwise it is too hard
         # to determine problems.
         #
+        bpy.ops.object.select_all(action='DESELECT')
+
+        if(humanObj.select_get() is False):
+            humanObj.select_set(True)
+
         context.view_layer.objects.active = humanObj
         bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
+
+        bpy.ops.object.select_all(action='DESELECT')
+        if(clothesObj.select_get() is False):
+            clothesObj.select_set(True)
+
         context.view_layer.objects.active = clothesObj
         bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
