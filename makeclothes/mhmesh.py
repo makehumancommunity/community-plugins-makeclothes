@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import numpy, pprint, mathutils
+import numpy as np
+import mathutils
 
 class MHMesh:
 
@@ -28,7 +29,6 @@ class MHMesh:
         self.vertexGroupVertices = dict()
         self.vertexGroupNames = dict()
         self._seedGroups = dict()
-        self._seedVertexCoordinates = []
         self.vertPolygons = {}  # will contain all polygons connected to a vertex, needed for efficiency (bestFace search)
 
         # additional helper indices, filled by getAdditionalIndices
@@ -52,11 +52,6 @@ class MHMesh:
 
         for vertex in self.data.vertices:
             self.vertPolygons[vertex.index] = []    # supply an index to be filled, will contain all polygons connected to a vertex
-            i = int(vertex.index)
-            x = float(vertex.co[0])
-            y = float(vertex.co[1])
-            z = float(vertex.co[2])
-            self._seedVertexCoordinates.append( [i, x, y, z] )
             for group in vertex.groups:
                 groupIndex = int(group.group)
                 if not int(groupIndex) in self.vertexGroupNames:
@@ -74,20 +69,15 @@ class MHMesh:
             for vertex in polygon.vertices:
                 self.vertPolygons[vertex].append(polygon)
 
-        # This somewhat cumbersome routine is here to ensure that vertex.index equals index in the
-        # resulting numpy array. It is theoretically possible that the index a vertex says it has
-        # is not the same as its position in the object's array with vertices
-        self.allVertexCoordinates = numpy.zeros((len(self._seedVertexCoordinates), 3))
-        i = 0
-        while i < len(self._seedVertexCoordinates):
-            idx = self._seedVertexCoordinates[i][0]
-            x = self._seedVertexCoordinates[i][1]
-            y = self._seedVertexCoordinates[i][2]
-            z = self._seedVertexCoordinates[i][3]
-            self.allVertexCoordinates[idx][0] = x
-            self.allVertexCoordinates[idx][1] = y
-            self.allVertexCoordinates[idx][2] = z
-            i = i + 1
+        # Get the count of vertices in the object
+        vertexCount = len(self.data.vertices)
+
+        # Allocate memory for x,y,z coordinates of all vertices
+        self.allVertexCoordinates = np.zeros(vertexCount * 3)
+
+        # Use the foreach_get method, returning a flat array, which needs to be reshaped
+        self.data.vertices.foreach_get('co', self.allVertexCoordinates)
+        self.allVertexCoordinates.shape = (vertexCount, 3)
 
         for groupIndex in self._seedGroups.keys():
             self.vertexGroupVertices[groupIndex] = self._seedGroups[groupIndex]
@@ -152,6 +142,10 @@ class MHMesh:
         for edge in mesh.edges:
             for vertex in edge.vertices:
                 self.vertEdges[vertex].append(edge)
+
+        # in case we need that (we need for a high number of vertices in MakeHuman
+        #
+        self.max_poles = max(len(self.vertEdges[x]) for x in self.vertEdges)
 
         # now make a connection between polygons and edges in both directions
         #

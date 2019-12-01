@@ -80,7 +80,30 @@ def checkStrayVertices(obj):
                 info += " " + str(v.index)
     if info != "":
         info = "Stray verts:" + info
-    return (b, cnt, info);
+    return (b, cnt, info)
+
+def checkNumberOfPoles(obj, max_def):
+    verts = obj.data.vertices
+    edges = obj.data.edges
+    vertEdges = [0 for d in range(len( obj.data.vertices))]
+    maxpole = 0
+    info = ""
+    cnt = 0
+
+    for edge in edges:
+        for vertex in edge.vertices:
+            vertEdges[vertex] += 1
+            if vertEdges[vertex] > max_def:
+                maxpole = vertEdges[vertex]             # highest number
+                if vertEdges[vertex] == (max_def + 1):  # but only count them once
+                    cnt += 1
+                    if cnt < 10:
+                        info += " " + str(vertex)
+    print (maxpole)
+    if info != "":
+        info = "Max-Pole is " + str(maxpole) + ". Vertices:" + info
+    return (maxpole <= max_def, cnt, info)
+    
 
 def checkFacesHaveAtMostFourVertices(obj):
     for polygon in obj.data.polygons:
@@ -119,7 +142,7 @@ def checkNumberOfUVMaps(obj):
 # do all tests on a human basemesh
 
 def checkSanityHuman(context):
-    error = ""
+    errortext = ""
     info  = ""
 
     humanObj = None
@@ -133,29 +156,29 @@ def checkSanityHuman(context):
 
     icon = "\001"
     if cnt == 0:
-        error += "Could not find any human object in this scene.\n"
+        errortext += "Could not find any human object in this scene.\n"
         icon = "\002"
     elif cnt > 1:
         icon = "\002"
-        error += "There are multiple human objects in this scene.\nTo avoid errors, only use one.\n"
+        errortext += "There are multiple human objects in this scene.\nTo avoid errors, only use one.\n"
     info += icon + "Number of human objects is exactly 1 in the scene.\n"
 
     if cnt == 0:    # we have to return, without a human at all no further checks possible
-        return (1, info, error)
+        return (1, info, errortext)
 
     icon = "\001"   # now we try the test on the first object
     if not checkHasAnyVGroups(humanObj):
-        error += "The human object does not have any vertex group.\nIt has to have at least one for MakeClothes to work.\n"
+        errortext += "The human object does not have any vertex group.\nIt has to have at least one for MakeClothes to work.\n"
         icon = "\002"
     info += icon + "At least one vertex group is available.\n"
 
     icon = "\001"
     (b, hint) = checkVertexGroupAssignmentsAreNotCorrupt(humanObj)
     if not b:
-        error += "The human object has vertices which belong non-existing\n" + hint
+        errortext += "The human object has vertices which belong non-existing\n" + hint
         icon = "\002"
     info += icon + "No vertex belongs to a non-existing group.\n"
-    return (len(error) > 0, info, error)
+    return (len(errortext) > 0, info, errortext)
 
 
 
@@ -165,20 +188,31 @@ def checkSanityHuman(context):
 # allowed to be called with second argument for checks between two objects
 
 def checkSanityClothes(obj, humanobj=None):
-    error = ""
+    errortext = ""
     info  = ""
+    max_def_poles = 8
+    errorcnt = 0
 
     icon = "\001"
     (b, cnt, hint) = checkStrayVertices(obj)
     if not b:
         icon = "\002"
-        error += "Object has " + str(cnt) + " stray vertices.\n" + hint
+        errortext += "Object has " + str(cnt) + " stray vertices.\n" + hint
+        errorcnt += 1
     info += icon + "No stray vertices.\n"
+
+    icon = "\001"
+    (b, cnt, hint) = checkNumberOfPoles(obj, max_def_poles)
+    if not b:
+        icon = "\003"
+        errortext += "Object has " + str(cnt) + " vertices with more than " + str(max_def_poles) + " edges attached (poles).\n" + hint
+    info += icon + "Number of poles <= " + str(max_def_poles) + ".\n"
 
     icon = "\001"
     suppress = 0
     if not checkFacesHaveAtMostFourVertices(obj):
-        error += "This object has at least one face with more than four vertices.\nN-gons are not supported by MakeClothes.\n"
+        errortext += "This object has at least one face with more than four vertices.\nN-gons are not supported by MakeClothes.\n"
+        errorcnt += 1
         icon = "\002"
         suppress = 1
     info += icon + "Faces do not have more than 4 vertices.\n"
@@ -188,33 +222,37 @@ def checkSanityClothes(obj, humanobj=None):
     if suppress == 0:
         icon = "\001"
         if not checkFacesHaveTheSameNumberOfVertices(obj):
-            error += "This object has faces with different numbers of vertices.\nTris *or* quads are supported, but not a mix of the two.\n"
+            errortext += "This object has faces with different numbers of vertices.\nTris *or* quads are supported, but not a mix of the two.\n"
+            errorcnt += 1
             icon = "\002"
         info += icon + "Faces are either tris or quads.\n"
 
     icon = "\001"
     if not checkHasAnyVGroups(obj):
-        error += "This object does not have any vertex group.\nIt has to have at least one for MakeClothes to work.\n"
+        errortext += "This object does not have any vertex group.\nIt has to have at least one for MakeClothes to work.\n"
+        errorcnt += 1
         icon = "\002"
     info += icon + "At least one vertex group must exist.\n"
 
     icon = "\001"
     if not checkAllVerticesBelongToAVGroup(obj):
-        error += "This object has vertices which do not belong to a vertex group.\n"
+        errortext += "This object has vertices which do not belong to a vertex group.\n"
+        errorcnt += 1
         icon = "\002"
     info += icon + "All vertices belong to a vertex group.\n"
 
     icon = "\001"
     (b, hint) = checkAllVerticesBelongToAtMostOneVGroup(obj)
     if not b:
-        error += "This object has vertices which belong to multiple vertex groups.\n" + hint
+        errortext += "This object has vertices which belong to multiple vertex groups.\n" + hint
+        errorcnt += 1
         icon = "\002"
     info += icon + "No vertex belongs to multiple groups.\n"
 
     icon = "\001"
     (b, hint) = checkVertexGroupAssignmentsAreNotCorrupt(obj)
     if not b:
-        error += "This object has vertices which belong non-existing vertex groups,\n" + hint
+        errortext += "This object has vertices which belong non-existing vertex groups,\n" + hint
         icon = "\002"
     info += icon + "No vertex is assigned to a non existing group.\n"
 
@@ -222,7 +260,8 @@ def checkSanityClothes(obj, humanobj=None):
         icon = "\001"
         (b, hint) = checkAllVGroupsInFirstExistsInSecond(obj, humanobj)
         if not b:
-            error += "This object has vertex groups which are missing on human,\nThese groups are:\n" + hint
+            errorcnt += 1
+            errortext += "This object has vertex groups which are missing on human,\nThese groups are:\n" + hint
             icon = "\002"
         info += icon + "All vertex groups exist on human.\n"
 
@@ -232,4 +271,4 @@ def checkSanityClothes(obj, humanobj=None):
         icon = "\003"
         info += icon + "Object has " + str(cnt) + " UV-maps. " + hint +"\n"
 
-    return (len(error) > 0, info, error)
+    return (errorcnt > 0, info, errortext)

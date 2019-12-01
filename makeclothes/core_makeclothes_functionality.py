@@ -1,6 +1,11 @@
 from .mhmesh import MHMesh
 from .material import MHMaterial
-import json, math, re, os, uuid, shutil
+import json
+import math
+import re
+import os
+import uuid
+import shutil
 import mathutils
 from mathutils import Vector
 
@@ -511,6 +516,7 @@ class MakeClothes():
                 f.write("x_scale " + str(self.minmax['xmin']) + " " + str(self.minmax['xmax']) + " " + str(round(self.scales[0], 4)) + "\n")
                 f.write("y_scale " + str(self.minmax['zmin']) + " " + str(self.minmax['zmax']) + " " + str(round(self.scales[1], 4)) + "\n")
                 f.write("z_scale " + str(self.minmax['ymin']) + " " + str(self.minmax['ymax']) + " " + str(round(self.scales[2], 4)) + "\n")
+                f.write("max_pole " + str(self.clothesmesh.max_poles) + "\n")
                 f.write("z_depth " + str(self.clothesObj.MhZDepth) + "\n\n")
                 f.write("# Vertex info:\n")
                 f.write("verts 0\n")
