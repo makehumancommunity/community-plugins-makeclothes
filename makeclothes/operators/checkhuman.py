@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import bpy, bmesh
-from ..sanitychecks import *
+import bpy
+from ..sanitychecks import checkSanityHuman
 
 class MHC_OT_CheckHumanOperator(bpy.types.Operator):
     """Extract one helper vertex group as clothes"""

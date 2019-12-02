@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import bpy, bmesh
-from ..sanitychecks import *
+import bpy
+from ..sanitychecks import checkSanityClothes
 
 class MHC_OT_CheckClothesOperator(bpy.types.Operator):
     """Do all checks we need for clothes"""

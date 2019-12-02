@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import bpy, bmesh, os
+import bpy
 import bpy.types
 from bpy.types import ShaderNodeBsdfPrincipled, ShaderNodeTexImage
 

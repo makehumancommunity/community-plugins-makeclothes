@@ -3,7 +3,8 @@
 
 #  Author: Joel Palmius
 
-import os, inspect
+import os
+import inspect
 
 _TRACING = True
 
