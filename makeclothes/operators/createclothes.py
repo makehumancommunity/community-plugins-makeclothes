@@ -74,7 +74,8 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
             bpy.ops.info.infobox('INVOKE_DEFAULT', title="Check Clothes", info=info, error=error)
             return {'FINISHED'}
 
-        rootDir = getClothesRoot()
+        subdir = context.scene.MHClothesDestination
+        rootDir = getClothesRoot(subdir)
         name = clothesObj.MhClothesName
         desc = clothesObj.MhClothesDesc
         license = context.scene.MhClothesLicense

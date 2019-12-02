@@ -41,9 +41,11 @@ def getMHDirectory():
     mhdir = os.path.join(mydocs, "makehuman", "v1py3")
     return mhdir
 
-def getClothesRoot():
+def getClothesRoot(subdir = None):
+    if subdir is None:
+        subdir = "clothes"
     mhdir = getMHDirectory()
-    return os.path.join(mhdir,"data","clothes")
+    return os.path.join(mhdir,"data",subdir)
 
 
 def trace(message = None):

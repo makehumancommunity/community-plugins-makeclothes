@@ -20,6 +20,16 @@ _tagsDescriptionAdd = "Enter Tags for MakeHuman, separate by comma"
 _nameDescription = "This is the base name of all files and directories written. A directory with the name will be created, and in it files with will be named with the name plus .mhclo, .mhmat and .obj."
 _descDescription = "This is the description of the clothes. It has no function outside being included as a comment in the produced .mhclo file."
 
+_destination = []
+_destination.append(("clothes", "clothes", "Clothes subdir", 1))
+_destination.append(("hair", "hair", "Hair subdir", 2))
+_destination.append(("teeth", "teeth", "Teeth subdir", 3))
+_destination.append(("eyebrows", "eyebrows", "Eyebrows subdir", 4))
+_destination.append(("eyelashes", "eyelashes", "Eyelashes subdir", 5))
+_destination.append(("tongue", "tongue", "Tongue subdir", 6))
+# TODO: Maybe we should cover topologies too? Would need other file ext though
+_destination_description = "This is the subdirectory (under data) where we should put the produced clothes"
+
 mh_tags = {}
 
 def extraProperties():
@@ -61,6 +71,7 @@ def extraProperties():
     bpy.types.Scene.MHTags_period = bpy.props.EnumProperty(items=mh_tags["period"], name="Period", description=_tagsDescription, default=mh_sel["period"])
     bpy.types.Scene.MHTags_type = bpy.props.EnumProperty(items=mh_tags["type"], name="Clothes type", description=_tagsDescription, default=mh_sel["type"])
     bpy.types.Scene.MHAdditionalTags = bpy.props.StringProperty(name="Additional tags", description=_tagsDescriptionAdd, default="")
+    bpy.types.Scene.MHClothesDestination = bpy.props.EnumProperty(items=_destination, name="Clothes destination", description=_destination_description, default="clothes")
 
     # Object properties, normally set by MPFB
     if not hasattr(bpy.types.Object, "MhObjectType"):
