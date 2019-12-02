@@ -3,6 +3,7 @@
 
 import bpy
 import bpy.types
+import os
 from bpy.types import ShaderNodeBsdfPrincipled, ShaderNodeTexImage
 
 class MHMaterial:
@@ -77,7 +78,29 @@ class MHMaterial:
             print("Found a diffuse texture: " + self.diffuseTexture)
         else:
             print("There was no diffuse texture to be found")
+            
+    def __str__(self):
+        mat = ""
+        mat = mat + "// Color shading attributes\n"
+        mat = mat + "diffuseColor  %.4f %.4f %.4f\n" % (self.diffuseColor[0], self.diffuseColor[1], self.diffuseColor[2])
+        s = self.shininess
+        mat = mat + "specularColor  %.4f %.4f %.4f\n" % (s, s, s) # I don't know how to represent this in a principled node
+        mat = mat + "shininess %.4f\n" % s
+        mat = mat + "opacity 1\n\n"
 
+        mat = mat + "// Textures\n\n"
+
+        if self.diffuseTexture:
+            bn = os.path.basename(self.diffuseTexture)
+            mat = mat + "diffuseTexture " + bn + "\n"
+
+        mat = mat + "// Settings\n\n"
+        mat = mat + "transparent False\n"
+        mat = mat + "alphaToCoverage True\n"
+        mat = mat + "backfaceCull False\n"
+        mat = mat + "depthless False\n"
+
+        return mat
 
 # TODO: Manage linked textures etc
 

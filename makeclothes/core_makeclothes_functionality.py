@@ -592,20 +592,15 @@ class MakeClothes():
                 f.write("# license: " + self.exportLicense + "\n#\n")
                 f.write("name " + self.exportName + " material\n\n")
 
-                f.write("// Color shading attributes\n")
-                f.write("diffuseColor  %.4f %.4f %.4f\n" % (mhmat.diffuseColor[0], mhmat.diffuseColor[1], mhmat.diffuseColor[2]))
-                f.write("specularColor  0.8 0.8 0.8\n")
-                f.write("shininess %.4f\n" % mhmat.shininess)
-                f.write("opacity 1\n\n")
-
-                f.write("// Textures and properties\n\n")
+                matsettings = str(mhmat)
+                f.write(matsettings)
 
                 if mhmat.diffuseTexture:
                     bn = os.path.basename(mhmat.diffuseTexture)
                     dest = os.path.join(self.dirName, bn)
                     shutil.copyfile(mhmat.diffuseTexture, dest)
-                    f.write("diffuseTexture " + bn)
                 f.close()
+
                 return (True, "")
         except EnvironmentError:
             return (False, "Cannot write " + outputFile)
