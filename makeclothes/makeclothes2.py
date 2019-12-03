@@ -38,6 +38,7 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
 
         humanBox.operator("makeclothes.mark_as_human", text="Mark as human")
         humanBox.operator("makeclothes.check_human", text="Check human")
+        humanBox.operator("makeclothes.delete_helper", text="Delete helpers")
 
         checkBox = layout.box()
         checkBox.label(text="Check clothes", icon="MESH_DATA")

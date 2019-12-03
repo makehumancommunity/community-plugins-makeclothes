@@ -174,7 +174,7 @@ class MakeClothes():
         #
         (b, vgroupname) = self.findClosestVertices()
         if b is False:
-            return (False, "Cannot create search tree for group " + vgroupname)
+            return (False, "Cannot create search tree for group " + vgroupname + " on human. Number of vertices must be at least 3.")
 
         self.findBestFaces()
         self.findWeightsAndDistances()
@@ -225,7 +225,7 @@ class MakeClothes():
             # 3 means rigid group, then an array is given
             #
             (size, kdtree) = self.humanmesh.vertexGroupKDTree(vgroupName) 
-            if size == 0:    # empty group
+            if size < 3:    # group with less 3 vertices does not work
                 return (False, vgroupName)
 
             #
