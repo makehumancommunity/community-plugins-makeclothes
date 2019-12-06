@@ -5,14 +5,20 @@ import bpy
 from ..sanitychecks import checkSanityHuman
 
 class MHC_OT_CheckHumanOperator(bpy.types.Operator):
-    """Extract one helper vertex group as clothes"""
+    """Check human object if it is usable for makeclothes"""
     bl_idname = "makeclothes.check_human"
     bl_label = "Check human"
     bl_options = {'REGISTER'}
 
     @classmethod
     def poll(self, context):
-        return True
+        if context.active_object is not None:
+            if not hasattr(context.active_object, "MhObjectType"):
+                return False
+            if context.active_object.select_get():
+                if context.active_object.MhObjectType == "Basemesh":
+                    return True
+        return False
 
     def execute(self, context):
         # set mode to object, especially if you are still in edit mode

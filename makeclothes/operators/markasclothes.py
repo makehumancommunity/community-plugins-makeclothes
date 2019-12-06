@@ -4,7 +4,7 @@
 import bpy
 
 class MHC_OT_MarkAsClothesOperator(bpy.types.Operator):
-    """Extract one helper vertex group as clothes"""
+    """Mark this object to be used as clothes"""
     bl_idname = "makeclothes.mark_as_clothes"
     bl_label = "Mark selected object as clothes"
     bl_options = {'REGISTER', 'UNDO'}
