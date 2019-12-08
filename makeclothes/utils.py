@@ -4,6 +4,8 @@
 #  Author: Joel Palmius
 
 import os
+import io
+import sys
 import inspect
 
 _TRACING = True
@@ -35,9 +37,38 @@ def getMyDocuments():
             print("Error when trying to get DOCUMENTS dir")
     return os.path.expanduser("~")
 
+#
+# use exact the same method as makehuman if a makehuman.conf file exists
+
+def pathFromConfigFile():
+    configFile = ''
+    if sys.platform.startswith('linux'):
+        configFile = os.path.expanduser('~/.config/makehuman.conf')
+
+    elif sys.platform.startswith('darwin'):
+        configFile = os.path.expanduser('~/Library/Application Support/MakeHuman/makehuman.conf')
+
+    elif sys.platform.startswith('win32'):
+        configFile = os.path.join(os.getenv('LOCALAPPDATA', ''), 'makehuman.conf')
+
+    configPath = ''
+
+    if os.path.isfile(configFile):
+        with io.open(configFile, 'r', encoding='utf-8') as f:
+            configPath = f.readline().strip()
+
+    homepath = ""
+    if os.path.isdir(configPath):
+        homepath = os.path.normpath(configPath).replace("\\", "/")
+    return (homepath)
+
 
 def getMHDirectory():
-    mydocs = getMyDocuments()
+    mydocs = pathFromConfigFile()
+
+    if len(mydocs) == 0:
+        mydocs = getMyDocuments()
+
     mhdir = os.path.join(mydocs, "makehuman", "v1py3")
     return mhdir
 
