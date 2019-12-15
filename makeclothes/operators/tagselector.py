@@ -5,6 +5,7 @@ import bpy
 from ..extraproperties import mh_tags
 
 class MHC_OT_TagSelector(bpy.types.Operator):
+    """select tags for filtering clothes"""
     bl_idname = "makeclothes.tag_selector"
     bl_label = "Edit tags"
     bl_options = {'REGISTER'}

@@ -4,14 +4,14 @@
 import bpy
 
 class MHC_OT_MarkAsHumanOperator(bpy.types.Operator):
-    """Extract one helper vertex group as clothes"""
+    """Mark this object to be used as human basemesh"""
     bl_idname = "makeclothes.mark_as_human"
     bl_label = "Mark selected object as human"
     bl_options = {'REGISTER', 'UNDO'}
 
     @classmethod
     def poll(self, context):
-        return context.active_object is not None
+        return context.active_object is not None and context.active_object.type == 'MESH'
 
     def getMeshType(self, humanObj):
         for group in humanObj.vertex_groups:

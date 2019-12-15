@@ -111,6 +111,8 @@ class MHC_OT_ExtractClothesOperator(bpy.types.Operator):
                 gidx = vert.groups[0].group
                 if not gidx in groupIndexes:
                     vertsToDelete.append(vert.index)
+            else:   # delete those belonging to no group
+                vertsToDelete.append(vert.index)
 
         vertsToDelete.sort(reverse=True)
 

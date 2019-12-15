@@ -110,6 +110,8 @@ class MHMesh:
 
                 size = len(tmp_varray)
 
+                if size < 3:
+                    return (size, None)
                 #
                 # in case of a rigid group
                 #
