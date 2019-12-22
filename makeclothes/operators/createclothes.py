@@ -60,6 +60,15 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
         bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
+        #
+        # in case that the human has shape keys, remove this one by one
+        # so that the last one will be accepted
+        #
+        if  humanObj.data.shape_keys is not None:
+            n = len (humanObj.data.shape_keys.key_blocks)
+            obj.active_shape_key_index = 0
+            for i in range(0, n):
+                bpy.ops.object.shape_key_remove(all=False)
 
         bpy.ops.object.select_all(action='DESELECT')
         if(clothesObj.select_get() is False):
