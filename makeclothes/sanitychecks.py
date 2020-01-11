@@ -99,7 +99,6 @@ def checkNumberOfPoles(obj, max_def):
                     cnt += 1
                     if cnt < 10:
                         info += " " + str(vertex)
-    print (maxpole)
     if info != "":
         info = "Max-Pole is " + str(maxpole) + ". Vertices:" + info
     return (maxpole <= max_def, cnt, info)
