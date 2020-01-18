@@ -36,6 +36,7 @@
 		"heels": { "text": "footwear: heels", "com": "all kinds of high heels" },
 		"sandals": { "text": "footwear: sandals", "com": "all kinds of sandals" },
 		"shoes": { "text": "footwear: shoes", "com": "all kinds of shoes" },
+		"hair": { "text": "head: polygon-hair", "com": "all kinds of hair" },
 		"hat": { "text": "headwear: hat", "com": "all kinds of hats and caps" },
 		"helmet": { "text": "headwear: helmet", "com": "all kinds of helmets" },
 		"mask": { "text": "headwear: mask", "com": "all kinds of masks" },

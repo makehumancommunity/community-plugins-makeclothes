@@ -129,7 +129,7 @@ class MakeClothes():
         self.humanmesh = MHMesh(humanObj)
 
         # predefine size of the array needed 
-        self.vertexMatches = [None for dummy in range(len(self.clothesmesh.data.vertices))]
+        self.vertexMatches = [None] * len(self.clothesmesh.data.vertices)
         self.exportName = exportName
         self.exportRoot = exportRoot
         self.exportLicense = license
