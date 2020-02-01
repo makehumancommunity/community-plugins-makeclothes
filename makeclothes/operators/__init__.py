@@ -4,6 +4,7 @@
 #  Author: Joel Palmius
 
 from .extractclothes import MHC_OT_ExtractClothesOperator
+from .importmhclo import MHC_OT_ImportClothesOperator
 from .markasclothes import MHC_OT_MarkAsClothesOperator
 from .markashuman import MHC_OT_MarkAsHumanOperator
 from .importhuman import MHC_OT_ImportHumanOperator
@@ -16,6 +17,7 @@ from .offsetscaling import MHC_OT_GetOffsetScaling
 
 OPERATOR_CLASSES = [
     MHC_OT_ExtractClothesOperator,
+    MHC_OT_ImportClothesOperator,
     MHC_OT_MarkAsClothesOperator,
     MHC_OT_MarkAsHumanOperator,
     MHC_OT_ImportHumanOperator,
@@ -29,6 +31,7 @@ OPERATOR_CLASSES = [
 
 __all__ = [
     "MHC_OT_ExtractClothesOperator",
+    "MHC_OT_ImportClothesOperator",
     "MHC_OT_MarkAsClothesOperator",
     "MHC_OT_MarkAsHumanOperator",
     "MHC_OT_ImportHumanOperator",
