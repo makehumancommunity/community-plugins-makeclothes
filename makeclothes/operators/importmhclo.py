@@ -8,6 +8,7 @@ from bpy_extras.io_utils import ImportHelper
 from bpy.props import StringProperty
 from ..utils import getClothesRoot, loadObjFile
 from ..core_makeclothes_functionality import _loadMeshJson
+from addon_utils import check,paths,enable,modules
 
 class import_mhclo:
     def __init__(self):
@@ -105,6 +106,8 @@ class import_mhclo:
         vn = 0
         status = ""
 
+        mhmat = None
+
         for line in fp:
             words= line.split()
 
@@ -129,6 +132,9 @@ class import_mhclo:
                     elif "description" in key:
                         self.description = " ".join(words[2:])
                 continue
+
+            if words[0] == "material":
+                mhmat = os.path.join(folder, words[1])
 
             # read vertices lines
             #
@@ -200,6 +206,8 @@ class import_mhclo:
 
         fp.close
 
+        obj = None
+
         if self.obj_file != "":
             obj = loadObjFile(context, self.obj_file)
             if obj is not None:
@@ -214,7 +222,23 @@ class import_mhclo:
                 if self.delete is True:
                     self.delete_group = "Delete_" + self.name
                     context.active_object.MhDeleteGroup = self.delete_group
+
+        if mhmat and obj and self.checkMakeSkinAvailable():
+            print("Makeskin is available. Using it to import MHMAT file too.")
+            from makeskin import MHMat, blendMatLoad
+            while len(obj.data.materials) > 0:
+                obj.data.materials.pop(index=0)
+            makeskinMaterial = MHMat(fileName=mhmat)
+            makeskinMaterial.assignAsNodesMaterialForObj(obj)
         return
+
+    def checkMakeSkinAvailable(self):
+        for path in paths():
+            for mod_name, mod_path in bpy.path.module_names(path):
+                is_enabled, is_loaded = check(mod_name)
+                if mod_name == "makeskin":
+                    return is_enabled and is_loaded
+        return False
 
     def setScalings (self, context, human):
         (baseMeshType, meshConfig) = _loadMeshJson(human)
