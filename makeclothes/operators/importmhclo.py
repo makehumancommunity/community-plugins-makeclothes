@@ -90,7 +90,8 @@ class import_mhclo:
             # and create new one
             #
             vgrp = ogroups.new(name=self.delete_group)
-            vgrp.add(dellist, 1, 'ADD') 
+            vgrp.add(dellist, 1, 'ADD')
+        self.clothes.location = human.location
         return
 
 
