@@ -1,42 +1,66 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import bpy
 
 ### --- VERTEX GROUP CHECKS --- ###
 
 def checkHasAnyVGroups(obj):
     return len(obj.vertex_groups) > 0
 
-def checkAllVerticesBelongToAVGroup(obj):
+# check if all vertices belong to a vertex group
+# markmesh will select the vertices without groups
+
+def checkAllVerticesBelongToAVGroup(obj, markmesh=False):
+    b = True
+    hint = ""
+
     for vert in obj.data.vertices:
         if len(vert.groups) < 1:
-            return False
-    return True
+            b = False
+            if markmesh is True:
+                vert.select = True
 
-def checkAllVerticesBelongToAtMostOneVGroup(obj):
+    if b is False and markmesh is True:
+            hint = "Change to edit mode and assign selected vertices to a vertex group\n"
+    return (b, hint)
+
+# check if vertices belong to more than one group
+# markmesh will select the vertices with more then one group
+
+def checkAllVerticesBelongToAtMostOneVGroup(obj, markmesh=False):
+    b = True
+    hint = ""
+
     for vert in obj.data.vertices:
         if len(vert.groups) > 1:
-            vgroup_names = {vgroup.index: vgroup.name for vgroup in obj.vertex_groups}
-            hint = "Vertex with index " + str(vert.index) + " belongs to the following groups:\n"
-            grps = ""
-            for group in vert.groups:
-                if len(grps) > 0:
-                    grps += ", "
-                grps += vgroup_names[group.group]
-            return (False, hint + grps)
-    return (True, "")
+            b = False
+            if markmesh is True:
+                vert.select = True
 
-def checkVertexGroupAssignmentsAreNotCorrupt(obj):
+    if b is False and markmesh is True:
+            hint = "Change to edit mode and remove all groups from selected vertices,\nthen assign them to only one group\n"
+    return (b, hint)
+
+# check if group assignments are correct
+# markmesh will select bad assigned vertices
+
+def checkVertexGroupAssignmentsAreNotCorrupt(obj, markmesh=False):
     validIndices = []
     for vg in obj.vertex_groups:
         validIndices.append(vg.index)
+    b = True
+    hint = ""
     for vert in obj.data.vertices:
         for group in vert.groups.keys():
             if not int(group) in validIndices:
-                hint = "Vertex with index " + str(vert.index) + " is assigned to a vertex group with index " + \
-                    str(vert.groups[group]) + ",\nbut that group does not exist\n"
-                return (False, hint)
-    return (True, "")
+                b = False
+                if markmesh is True:
+                    vert.select = True
+
+    if b is False and markmesh is True:
+            hint = "Change to edit mode and re-assign selected vertices\n"
+    return (b, hint)
 
 def checkAllVGroupsInFirstExistsInSecond(firstObj, secondObj):
     firstObjVGroups = []
@@ -60,8 +84,9 @@ def checkAllVGroupsInFirstExistsInSecond(firstObj, secondObj):
 ### --- FACE CHECKS --- ###
 
 # if vertices belong to no faces at all it will also not work
+# markmesh will select stray vertices
 #
-def checkStrayVertices(obj):
+def checkStrayVertices(obj, markmesh=False):
     verts = obj.data.vertices
     facesfound = {}
     for v in verts:
@@ -74,18 +99,18 @@ def checkStrayVertices(obj):
     cnt = 0
     for v in verts:
         if not facesfound[v.index]:
+            if markmesh:
+                v.select = True
             b = False
             cnt += 1
-            if cnt < 10:
-                info += " " + str(v.index)
-    if info != "":
-        info = "Stray verts:" + info
+    if b is False and markmesh is True:
+        info = "Change to edit mode and delete selected vertices.\n"
     return (b, cnt, info)
 
-def checkNumberOfPoles(obj, max_def):
+def checkNumberOfPoles(obj, max_def, markmesh=False):
     verts = obj.data.vertices
     edges = obj.data.edges
-    vertEdges = [0 for d in range(len( obj.data.vertices))]
+    vertEdges = [0] * len( obj.data.vertices)
     maxpole = 0
     info = ""
     cnt = 0
@@ -96,32 +121,67 @@ def checkNumberOfPoles(obj, max_def):
             if vertEdges[vertex] > max_def:
                 maxpole = vertEdges[vertex]             # highest number
                 if vertEdges[vertex] == (max_def + 1):  # but only count them once
+                    if markmesh is True:
+                        verts[vertex].select = True
                     cnt += 1
-                    if cnt < 10:
-                        info += " " + str(vertex)
-    print (maxpole)
-    if info != "":
-        info = "Max-Pole is " + str(maxpole) + ". Vertices:" + info
+    if cnt > 1:
+        info = "Max-Pole is " + str(maxpole) + ".\n"
+        if markmesh is True:
+            info += "To change this, switch to edit mode, these vertices are selected.\n"
+
     return (maxpole <= max_def, cnt, info)
-    
 
-def checkFacesHaveAtMostFourVertices(obj):
-    for polygon in obj.data.polygons:
-        verts_in_face = polygon.vertices[:]
-        if len(verts_in_face) > 4:
-            return False
-    return True
+# test if a face has more than 4 vertices
+# markmesh will select the polygons
 
-def checkFacesHaveTheSameNumberOfVertices(obj):
-    countToLookFor = None
+def checkFacesHaveAtMostFourVertices(obj, markmesh=False):
+    b = True
+    info = ""
+
     for polygon in obj.data.polygons:
-        verts_in_face = polygon.vertices[:]
-        if countToLookFor is None:
-            countToLookFor = len(verts_in_face)
-        else:
-            if len(verts_in_face) != countToLookFor:
-                return False
-    return True
+        if len(polygon.vertices) > 4:
+            b = False
+            if markmesh is True:
+                polygon.select = True
+
+    if b is False and markmesh is True:
+        info = "Change to edit mode and modify selected faces.\n"
+
+    return (b, info)
+
+# test if the faces have the same number of vertices, either 3 or 4
+# markmesh will select the polygons which are less used in case of error
+
+def checkTriOrQuad(obj, markmesh):
+    cntarr = [0] *5
+
+    for polygon in obj.data.polygons:
+        l = len(polygon.vertices)
+        if l < 5:
+            cntarr[l] += 1
+
+    if cntarr[3] == 0:
+        return (True, "quad mesh")
+    if cntarr[4] == 0:
+        return (True, "triangle mesh")
+
+    disp = 4
+    mesh = "triangle"
+    wrong= "quads"
+    if cntarr[4] > cntarr[3]:
+        disp = 3
+        mesh = "quad"
+        wrong = "triangles"
+
+    info = "Mesh seems to be a " + mesh + " mesh. But some faces are " + wrong + ".\n"
+
+    if markmesh is True:
+        info += "Change to edit mode and modify selected faces.\n"
+        for polygon in obj.data.polygons:
+            if len(polygon.vertices) == disp:
+                polygon.select = True
+
+    return (False, info)
 
 ### --- UV MAP CHECKS --- ###
 
@@ -186,33 +246,38 @@ def checkSanityHuman(context):
 # do all tests on a piece of cloth (called when creating the clothes, but also for a check)
 #
 # allowed to be called with second argument for checks between two objects
+#
+# if markmesh is True marking the mesh (selecting the vertices)
+# will always be done only for the first occuring problem
 
-def checkSanityClothes(obj, humanobj=None):
+def checkSanityClothes(obj, humanobj=None, markmesh=True):
     errortext = ""
     info  = ""
     max_def_poles = 8
     errorcnt = 0
 
+    if markmesh is True:
+        bpy.ops.object.mode_set (mode="EDIT")
+        bpy.ops.mesh.select_all (action="DESELECT")
+        bpy.ops.mesh.select_mode (type="VERT")
+        bpy.ops.object.mode_set (mode="OBJECT")
+
     icon = "\001"
-    (b, cnt, hint) = checkStrayVertices(obj)
+    (b, cnt, hint) = checkStrayVertices(obj, markmesh)
     if not b:
         icon = "\002"
         errortext += "Object has " + str(cnt) + " stray vertices.\n" + hint
         errorcnt += 1
+        markmesh = False
     info += icon + "No stray vertices.\n"
 
     icon = "\001"
-    (b, cnt, hint) = checkNumberOfPoles(obj, max_def_poles)
-    if not b:
-        icon = "\003"
-        errortext += "Object has " + str(cnt) + " vertices with more than " + str(max_def_poles) + " edges attached (poles).\n" + hint
-    info += icon + "Number of poles <= " + str(max_def_poles) + ".\n"
-
-    icon = "\001"
     suppress = 0
-    if not checkFacesHaveAtMostFourVertices(obj):
-        errortext += "This object has at least one face with more than four vertices.\nN-gons are not supported by MakeClothes.\n"
+    (b, hint) = checkFacesHaveAtMostFourVertices(obj, markmesh)
+    if not b:
+        errortext += "This object has at least one face with more than four vertices.\nN-gons are not supported by MakeHuman.\n" + hint
         errorcnt += 1
+        markmesh = False
         icon = "\002"
         suppress = 1
     info += icon + "Faces do not have more than 4 vertices.\n"
@@ -221,11 +286,13 @@ def checkSanityClothes(obj, humanobj=None):
     #
     if suppress == 0:
         icon = "\001"
-        if not checkFacesHaveTheSameNumberOfVertices(obj):
-            errortext += "This object has faces with different numbers of vertices.\nTris *or* quads are supported, but not a mix of the two.\n"
+        (b, hint) = checkTriOrQuad(obj, markmesh)
+        if not b:
+            errortext += "This object has faces with different numbers of vertices.\nTris *or* quads are supported, but not a mix of the two.\n" + hint
             errorcnt += 1
+            markmesh = False
             icon = "\002"
-        info += icon + "Faces are either tris or quads.\n"
+        info += icon + "Object is a " + hint + ".\n"
 
     icon = "\001"
     if not checkHasAnyVGroups(obj):
@@ -235,25 +302,30 @@ def checkSanityClothes(obj, humanobj=None):
     info += icon + "At least one vertex group must exist.\n"
 
     icon = "\001"
-    if not checkAllVerticesBelongToAVGroup(obj):
-        errortext += "This object has vertices which do not belong to a vertex group.\n"
+    (b, hint) = checkAllVerticesBelongToAVGroup(obj, markmesh)
+    if not b:
+        errortext += "This object has vertices which do not belong to a vertex group.\n" + hint
         errorcnt += 1
+        markmesh = False
         icon = "\002"
     info += icon + "All vertices belong to a vertex group.\n"
 
     icon = "\001"
-    (b, hint) = checkAllVerticesBelongToAtMostOneVGroup(obj)
+    (b, hint) = checkAllVerticesBelongToAtMostOneVGroup(obj, markmesh)
     if not b:
         errortext += "This object has vertices which belong to multiple vertex groups.\n" + hint
         errorcnt += 1
+        markmesh = False
         icon = "\002"
     info += icon + "No vertex belongs to multiple groups.\n"
 
     icon = "\001"
-    (b, hint) = checkVertexGroupAssignmentsAreNotCorrupt(obj)
+    (b, hint) = checkVertexGroupAssignmentsAreNotCorrupt(obj, markmesh)
     if not b:
         errortext += "This object has vertices which belong non-existing vertex groups,\n" + hint
+        errorcnt += 1
         icon = "\002"
+        markmesh = False
     info += icon + "No vertex is assigned to a non existing group.\n"
 
     if humanobj is not None:
@@ -265,10 +337,20 @@ def checkSanityClothes(obj, humanobj=None):
             icon = "\002"
         info += icon + "All vertex groups exist on human.\n"
 
+    # for the last two only issue a warning
+    #
     icon = "\001"
     (b, cnt, hint) = checkNumberOfUVMaps(obj)
     if not b:
         icon = "\003"
         info += icon + "Object has " + str(cnt) + " UV-maps. " + hint +"\n"
+
+    icon = "\001"
+    (b, cnt, hint) = checkNumberOfPoles(obj, max_def_poles, markmesh)
+    if not b:
+        icon = "\003"
+        errortext += "Object has " + str(cnt) + " vertices with more than " + str(max_def_poles) + " edges attached (poles).\n" + hint
+        markmesh = False
+    info += icon + "Number of poles <= " + str(max_def_poles) + ".\n"
 
     return (errorcnt > 0, info, errortext)

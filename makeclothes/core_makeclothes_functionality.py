@@ -61,20 +61,6 @@ class _VertexMatch():
     def markRigid(self, humanVertexIndex):
         self.rigidMatch = humanVertexIndex
 
-    def setClosestIndices(self, v1, v2, v3, v1c = None, v2c = None, v3c = None ):
-        self.closestHumanVertexIndices[0] = v1
-        self.closestHumanVertexIndices[1] = v2
-        self.closestHumanVertexIndices[2] = v3
-
-        if v1c is None:
-            v1c = [0.0, 0.0, 0.0]
-        if v2c is None:
-            v2c = [0.0, 0.0, 0.0]
-        if v3c is None:
-            v3c = [0.0, 0.0, 0.0]
-
-        self.closestHumanVertexCoordinates = [v1c, v2c, v3c]
-
     def setWeights(self, w1, w2, w3):
         self.weights[0] = w1
         self.weights[1] = w2
@@ -143,7 +129,7 @@ class MakeClothes():
         self.humanmesh = MHMesh(humanObj)
 
         # predefine size of the array needed 
-        self.vertexMatches = [None for dummy in range(len(self.clothesmesh.data.vertices))] 
+        self.vertexMatches = [None] * len(self.clothesmesh.data.vertices)
         self.exportName = exportName
         self.exportRoot = exportRoot
         self.exportLicense = license
@@ -172,9 +158,9 @@ class MakeClothes():
 
         # also the groups have been tested we should avoid going on with an unknown group
         #
-        (b, vgroupname) = self.findClosestVertices()
+        (b, text) = self.findClosestVertices()
         if b is False:
-            return (False, "Cannot create search tree for group " + vgroupname + " on human. Number of vertices must be at least 3.")
+            return (False, text)
 
         self.findBestFaces()
         self.findWeightsAndDistances()
@@ -225,13 +211,20 @@ class MakeClothes():
             # 3 means rigid group, then an array is given
             #
             (size, kdtree) = self.humanmesh.vertexGroupKDTree(vgroupName) 
-            if size < 3:    # group with less 3 vertices does not work
-                return (False, vgroupName)
+            if size < 3:    # group with less than 3 vertices does not work
+                return (False, "Cannot create search tree for group " + vgroupName + " on human. Number of vertices must be at least 3.")
 
             #
             # special code for rigid group
             #
             if size == 3:
+                #
+                # first test for a degenerated triangle (like 3 verts forming a line)
+                #
+                area = mathutils.geometry.area_tri(kdtree[0].co, kdtree[1].co, kdtree[2].co)
+                if area < 0.0001:
+                    return (False, "Group " + vgroupName + ": The vertices create a triangle smaller than 0.0001, this will result in bad geometry")
+
                 for vertex in clothesVertices:
                     vertexMatch = _VertexMatch(vertex[0], vertex[1], vertex[2], vertex[3])  # idx x y z
                     hCoord = []
