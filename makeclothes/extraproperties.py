@@ -73,6 +73,10 @@ def extraProperties():
     bpy.types.Scene.MHAdditionalTags = bpy.props.StringProperty(name="Additional tags", description=_tagsDescriptionAdd, default="")
     bpy.types.Scene.MHClothesDestination = bpy.props.EnumProperty(items=_destination, name="Clothes destination", description=_destination_description, default="clothes")
 
+    bpy.types.Scene.MHOverwrite = BoolProperty(name="Overwrite existent clothes", description="Must be marked, if you want to replace old files (.mhclo, .obj etc.)", default=False)
+    bpy.types.Scene.MHAllowMods = BoolProperty(name="Allow modifiers", description="Must be marked, if modifiers should be taken into account", default=True)
+
+
     # Object properties, normally set by MPFB
     if not hasattr(bpy.types.Object, "MhObjectType"):
         bpy.types.Object.MhObjectType = StringProperty(name="Object type", description="This is what type of MakeHuman object is (such as Clothes, Eyes...)", default="")

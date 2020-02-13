@@ -123,7 +123,7 @@ class MakeClothes():
         self.clothesObj = clothesObj
         self.humanObj = humanObj
         if context:
-            self.clothesmesh = MHMesh(clothesObj, context=context, allow_modifiers=True)
+            self.clothesmesh = MHMesh(clothesObj, context=context, allow_modifiers=context.scene.MHAllowMods)
         else:
             self.clothesmesh = MHMesh(clothesObj)
         self.humanmesh = MHMesh(humanObj)

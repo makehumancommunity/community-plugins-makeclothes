@@ -7,7 +7,7 @@
 from bpy.utils import register_class, unregister_class
 from .extraproperties import extraProperties
 from .makeclothes2 import MHC_PT_MakeClothesPanel
-from .infobox import MHC_OT_InfoBox
+from .infobox import MHC_OT_InfoBox,MHC_WarningBox
 from .operators import *
 
 bl_info = {
@@ -25,10 +25,12 @@ MAKECLOTHES2_CLASSES = []
 MAKECLOTHES2_CLASSES.extend(OPERATOR_CLASSES)
 MAKECLOTHES2_CLASSES.append(MHC_PT_MakeClothesPanel)
 MAKECLOTHES2_CLASSES.append(MHC_OT_InfoBox)
+MAKECLOTHES2_CLASSES.append(MHC_WarningBox)
 
 __all__ = [
     "MHC_PT_MakeClothesPanel",
     "MHC_OT_InfoBox",
+    "MHC_WarningBox",
     "MAKECLOTHES2_CLASSES"
 ]
 
