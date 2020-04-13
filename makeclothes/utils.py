@@ -8,6 +8,7 @@ import io
 import sys
 import bpy
 import inspect
+from addon_utils import check, paths, enable, modules
 
 # we need this for the standard obj-loader 
 #
@@ -15,6 +16,7 @@ from mathutils import Matrix
 from bpy_extras.io_utils import axis_conversion
 from io_scene_obj import import_obj
 
+LEAST_REQUIRED_MAKESKIN_VERSION = 20200116
 _TRACING = True
 
 def getMyDocuments():
@@ -112,6 +114,14 @@ def loadObjFile(context, filename):
            return (obj)
 
     return (None)
+
+def checkMakeSkinAvailable():
+    for path in paths():
+        for mod_name, mod_path in bpy.path.module_names(path):
+            is_enabled, is_loaded = check(mod_name)
+            if mod_name == "makeskin":
+                return is_enabled and is_loaded
+    return False
 
 def trace(message = None):
     global _TRACING

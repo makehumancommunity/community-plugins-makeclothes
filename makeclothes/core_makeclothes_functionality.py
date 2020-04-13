@@ -8,6 +8,10 @@ import uuid
 import shutil
 import mathutils
 from mathutils import Vector
+from .utils import checkMakeSkinAvailable, LEAST_REQUIRED_MAKESKIN_VERSION
+
+_EVALUATED_MAKESKIN = False
+_MAKESKIN_AVAILABLE = False
 
 _knownMeshes = {}                       # place to hold all jsons of meshes, used not to reload them again and again
                                         # normally there will be only a few meshes on disk
@@ -139,6 +143,26 @@ class MakeClothes():
         self.deleteVerticesOutput = ""
         self.clothesmesh.getAdditionalIndices() 
         self.clothesmesh.getUVforExport()       # method to assign UVs to mesh
+        self.useMakeSkin = False
+
+        global _EVALUATED_MAKESKIN
+        global _MAKESKIN_AVAILABLE
+
+        if not _EVALUATED_MAKESKIN:
+            ms = checkMakeSkinAvailable()
+            if ms:
+                from makeskin import MAKESKIN_VERSION
+                if MAKESKIN_VERSION >= LEAST_REQUIRED_MAKESKIN_VERSION:
+                    _MAKESKIN_AVAILABLE = True
+                    print("A useful version of MakeSkin is available")
+                else:
+                    print("MakeSkin is available, but in a too old version. At least " + str(LEAST_REQUIRED_MAKESKIN_VERSION) + " is required. Not showing related options.")
+            else:
+                print("MakeSkin is not available or not enabled.")
+            _EVALUATED_MAKESKIN = True
+
+        if _MAKESKIN_AVAILABLE and context:
+            self.useMakeSkin = context.scene.MhMcMakeSkin
 
     #
     # here the work is done. __init__ cannot provide proper return codes
@@ -193,9 +217,37 @@ class MakeClothes():
         (b, hint) = self.writeObj()
         if b is False:
             return (False, hint)
-        (b, hint) = self.writeMhMat()
-        if b is False:
-            return (False, hint)
+
+        if self.useMakeSkin:
+            print("Using makeskin to write material")
+            from makeskin import MHMat as MakeSkinMat
+            mat = MakeSkinMat(self.clothesObj)
+            outputFile = os.path.join(self.dirName, self.cleanedName + ".mhmat")
+
+            handling = "NORMALIZE"
+            if self.clothesObj.MhMsTextures:
+                handling = self.clothesObj.MhMsTextures
+            if handling == "NORMALIZE":
+                mat.copyTextures(outputFile)
+            if handling == "COPY":
+                mat.copyTextures(outputFile, normalize=False)
+
+            if mat.settings["normalmapTexture"]:
+                mat.shaderConfig["normal"] = True
+            if mat.settings["bumpmapTexture"]:
+                mat.shaderConfig["bump"] = True
+            if self.clothesObj.MhMsUseLit and self.clothesObj.MhMsLitsphere:
+                mat.litSphere = self.clothesObj.MhMsLitsphere
+            if mat.settings["displacementmapTexture"]:
+                mat.shaderConfig["displacement"] = True
+
+            with open(outputFile, 'w') as f:
+                f.write(str(mat))
+        else:
+            print("Using limited MakeClothes material model, ie not MakeSkin")
+            (b, hint) = self.writeMhMat()
+            if b is False:
+                return (False, hint)
 
         if True:
             self.writeDebug()
