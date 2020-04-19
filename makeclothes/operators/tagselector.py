@@ -23,73 +23,42 @@ class MHC_OT_TagSelector(bpy.types.Operator):
         #
         # reset everything
         #
-        usertags = ""
-        sc.MHTags_activity = sc.MHTags_dresscode = sc.MHTags_period = sc.MHTags_type = "none"
+        usertags = []
+        for group in mh_tags.keys():
+            setattr(sc, 'MHTags_'+group.lower(), "none")
+
         #
         # now fill in the tags from MhClothesTags
         #
+
         for tag in tags:
+
             if len(tag) == 0:       # avoid empty tags
                 continue
-            found = 0
-            for item in mh_tags["gender"]:
-                if tag == item[0]:
-                    sc.MHTags_gender = tag
-                    found = 1
-                    break
-            if found:
-                continue
 
-            for item in mh_tags["dresscode"]:
-                if tag == item[0]:
-                    sc.MHTags_dresscode = tag
-                    found = 1
+            found = False
+            for group, gr_items in mh_tags.items():
+                for item in gr_items:
+                    if tag == item[0]:
+                        setattr(sc, 'MHTags_'+group.lower(), tag)
+                        found = True
+                        break
+                if found:
                     break
-            if found:
-                continue
 
-            for item in mh_tags["activity"]:
-                if tag == item[0]:
-                    sc.MHTags_activity = tag
-                    found = 1
-                    break
-            if found:
-                continue
-
-            for item in mh_tags["period"]:
-                if tag == item[0]:
-                    sc.MHTags_period = tag
-                    found = 1
-                    break
-            if found:
-                continue
-
-            for item in mh_tags["type"]:
-                if tag == item[0]:
-                    sc.MHTags_type = tag
-                    found = 1
-                    break
-            if found:
-                continue
+            # if tag is not found, put it in the user tags
             #
-            #
-            # everything not found is put in the user-tag
-            #
-            if len(usertags) > 0:
-                usertags += ","
-            usertags += tag
+            if not found:
+                usertags.append(tag)
 
-        sc.MHAdditionalTags = usertags
+        sc.MHAdditionalTags = ','.join(usertags)
         wm = context.window_manager
         return wm.invoke_props_dialog(self, width=400)
 
     def draw(self, context):
         layout = self.layout
-        layout.prop(context.scene, 'MHTags_gender')
-        layout.prop(context.scene, 'MHTags_dresscode')
-        layout.prop(context.scene, 'MHTags_activity')
-        layout.prop(context.scene, 'MHTags_period')
-        layout.prop(context.scene, 'MHTags_type')
+        for group in mh_tags.keys():
+            layout.prop(context.scene, 'MHTags_'+group.lower())
         layout.prop(context.scene, 'MHAdditionalTags')
 
 
@@ -97,14 +66,15 @@ class MHC_OT_TagSelector(bpy.types.Operator):
 
         # sample tags to form a string
         #
-        sc = context.scene;
+        sc = context.scene
         context.object.MhClothesTags = ""
         #
         # throw away additional blanks between commas etc
         #
         addtags = ",".join(elem.strip() for elem in sc.MHAdditionalTags.split(","))
+        defaulttags = [getattr(sc, 'MHTags_'+group.lower()) for group in mh_tags.keys()]
 
-        for tag in (sc.MHTags_gender, sc.MHTags_dresscode, sc.MHTags_activity, sc.MHTags_period, sc.MHTags_type, addtags):
+        for tag in [*defaulttags, addtags]:
             if tag != "none" and len(tag) > 0:
                 if len(context.object.MhClothesTags) > 0:
                     context.object.MhClothesTags += ","
