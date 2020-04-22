@@ -82,6 +82,7 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
                 produceBox.operator("makeclothes.offset_scaling", text="Change offset scaling")
                 produceBox.label(text="Delete-Group on Base-Mesh")
                 produceBox.prop(obj, 'MhDeleteGroup', text="")
+                produceBox.prop(scn, 'MhMcMakeSkin', text="Use MakeSkin")
                 produceBox.label(text="Destination subdir")
                 produceBox.prop(scn, 'MHClothesDestination', text="")
                 produceBox.operator("makeclothes.create_clothes", text="Make clothes")

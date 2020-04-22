@@ -72,10 +72,9 @@ def extraProperties():
     bpy.types.Scene.MHTags_type = bpy.props.EnumProperty(items=mh_tags["type"], name="Clothes type", description=_tagsDescription, default=mh_sel["type"])
     bpy.types.Scene.MHAdditionalTags = bpy.props.StringProperty(name="Additional tags", description=_tagsDescriptionAdd, default="")
     bpy.types.Scene.MHClothesDestination = bpy.props.EnumProperty(items=_destination, name="Clothes destination", description=_destination_description, default="clothes")
-
     bpy.types.Scene.MHOverwrite = BoolProperty(name="Overwrite existent clothes", description="Must be marked, if you want to replace old files (.mhclo, .obj etc.)", default=False)
     bpy.types.Scene.MHAllowMods = BoolProperty(name="Allow modifiers", description="Must be marked, if modifiers should be taken into account", default=True)
-
+    bpy.types.Scene.MhMcMakeSkin = BoolProperty(name="Use makeskin", description="Use MakeSkin (if available) for writing material. This will be silently ignored if MakeSkin is not installed. For this to work you should have created the object's material using MakeSkin.", default=False)
 
     # Object properties, normally set by MPFB
     if not hasattr(bpy.types.Object, "MhObjectType"):
