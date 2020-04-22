@@ -1,6 +1,7 @@
 {
 	"gender": {
-		"unisex": { "com": "not gender specific", "sel": 1 },
+		"none":  {"text": "", "com": "not specified", "sel": 1 },
+		"unisex": { "com": "not gender specific" },
 		"female": { "com": "clothes used for females" },
 		"male": { "com": "clothes used for males" }
 	},
