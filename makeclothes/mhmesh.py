@@ -48,7 +48,9 @@ class MHMesh:
 
         for group in obj.vertex_groups:
             if not group.name in self.vertexGroupNames:
-                self.vertexGroupNames[int(group.index)] = group.name
+                ind = int(group.index)
+                self.vertexGroupNames[ind] = group.name
+                self._seedGroups[ind] = []
 
         for vertex in self.data.vertices:
             self.vertPolygons[vertex.index] = []    # supply an index to be filled, will contain all polygons connected to a vertex
@@ -57,8 +59,6 @@ class MHMesh:
                 if not int(groupIndex) in self.vertexGroupNames:
                     print("Vertex says it has group with index " + str(groupIndex) + ", but that group does not exist. Will ignore this vertex group assignment.")
                 else:
-                    if not groupIndex in self._seedGroups:
-                        self._seedGroups[groupIndex] = []
                     seedGroup = self._seedGroups[groupIndex]
                     vertDef = [int(vertex.index), float(vertex.co[0]), float(vertex.co[1]), float(vertex.co[2])] # Index, x, y, z
                     seedGroup.append(vertDef)

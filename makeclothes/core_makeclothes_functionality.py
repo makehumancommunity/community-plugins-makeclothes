@@ -259,6 +259,11 @@ class MakeClothes():
             vgroupName = self.clothesmesh.vertexGroupNames[vgroupIdx]
             clothesVertices = self.clothesmesh.vertexGroupVertices[vgroupIdx]
 
+            # skip empty groups on clothes
+            #
+            if len(clothesVertices) == 0:
+                next
+
             # determine kd tree, also delivers number of vertices per group
             # 3 means rigid group, then an array is given
             #
