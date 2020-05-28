@@ -23,7 +23,7 @@ class MHC_OT_TagSelector(bpy.types.Operator):
         #
         # reset everything
         #
-        usertags = []
+        usertags = set()
         for group in mh_tags.keys():
             setattr(sc, 'MHTags_'+group.lower(), "none")
 
@@ -49,9 +49,9 @@ class MHC_OT_TagSelector(bpy.types.Operator):
             # if tag is not found, put it in the user tags
             #
             if not found:
-                usertags.append(tag)
+                usertags.add(tag)
 
-        sc.MHAdditionalTags = ','.join(usertags)
+        sc.MHAdditionalTags = ', '.join(sorted(usertags))
         wm = context.window_manager
         return wm.invoke_props_dialog(self, width=400)
 
