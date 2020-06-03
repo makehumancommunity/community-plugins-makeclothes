@@ -13,6 +13,7 @@ from .createclothes import MHC_OT_CreateClothesOperator
 from .checkhuman import MHC_OT_CheckHumanOperator
 from .deletehelper import MHC_OT_DeleteHelper
 from .tagselector import MHC_OT_TagSelector
+from .importpredef import MHC_OT_Predefined
 from .offsetscaling import MHC_OT_GetOffsetScaling
 
 OPERATOR_CLASSES = [
@@ -26,6 +27,7 @@ OPERATOR_CLASSES = [
     MHC_OT_CheckHumanOperator,
     MHC_OT_DeleteHelper,
     MHC_OT_TagSelector,
+    MHC_OT_Predefined,
     MHC_OT_GetOffsetScaling
 ]
 
@@ -40,6 +42,7 @@ __all__ = [
     "MHC_OT_CheckHumanOperator",
     "MHC_OT_DeleteHelper",
     "MHC_OT_TagSelector",
+    "MHC_OT_Predefined",
     "MHC_OT_GetOffsetScaling",
     "OPERATOR_CLASSES"
 ]

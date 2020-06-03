@@ -37,7 +37,10 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
         humanBox = layout.box()
         humanBox.label(text="Human", icon="MESH_DATA")
         if not base_available:
-            humanBox.operator("makeclothes.importhuman", text="Import human")
+            if context.scene.MH_predefinedMeshes != "---":
+                humanBox.prop(context.scene, 'MH_predefinedMeshes')
+                humanBox.operator("makeclothes.importpredef", text="Import predefined human")
+            humanBox.operator("makeclothes.importhuman", text="Import human (.obj)")
 
         humanBox.operator("makeclothes.mark_as_human", text="Mark as human")
         humanBox.operator("makeclothes.check_human", text="Check human")
