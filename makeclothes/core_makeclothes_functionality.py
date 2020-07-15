@@ -221,28 +221,18 @@ class MakeClothes():
         if self.useMakeSkin:
             print("Using makeskin to write material")
             from makeskin import MHMat as MakeSkinMat
+
             mat = MakeSkinMat(self.clothesObj)
             outputFile = os.path.join(self.dirName, self.cleanedName + ".mhmat")
 
-            handling = "NORMALIZE"
-            if self.clothesObj.MhMsTextures:
-                handling = self.clothesObj.MhMsTextures
-            if handling == "NORMALIZE":
-                mat.copyTextures(outputFile)
-            if handling == "COPY":
-                mat.copyTextures(outputFile, normalize=False)
+            checkImg = mat.checkAllTexturesAreSaved()
+            if checkImg:
+                return (False, checkImg)
 
-            if mat.settings["normalmapTexture"]:
-                mat.shaderConfig["normal"] = True
-            if mat.settings["bumpmapTexture"]:
-                mat.shaderConfig["bump"] = True
-            if self.clothesObj.MhMsUseLit and self.clothesObj.MhMsLitsphere:
-                mat.litSphere = self.clothesObj.MhMsLitsphere
-            if mat.settings["displacementmapTexture"]:
-                mat.shaderConfig["displacement"] = True
+            errtext = mat.writeMHmat(self.clothesObj, outputFile)
+            if errtext:
+                return (False, checkImg)
 
-            with open(outputFile, 'w') as f:
-                f.write(str(mat))
         else:
             print("Using limited MakeClothes material model, ie not MakeSkin")
             (b, hint) = self.writeMhMat()
