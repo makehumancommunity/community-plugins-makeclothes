@@ -3,6 +3,13 @@
 
 #  Author: Joel Palmius
 
+# layout:
+#
+# [preferences/common-settings]
+# [get & check human]
+# [get & check clothes]
+# [create clothes]
+
 import bpy
 
 class MHC_PT_MakeClothesPanel(bpy.types.Panel):
@@ -24,31 +31,10 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
 
         obj = context.active_object
 
-        setupBox = layout.box()
-        setupBox.label(text="Setup clothes mesh", icon="MESH_DATA")
-        setupBox.operator("makeclothes.mark_as_clothes", text="Mark as clothes")
-
-        setupBox.label(text="Vertex group as clothes:")
-        setupBox.operator("makeclothes.extract_clothes", text="Extract clothes")
-
-        setupBox.label(text="Edit existent clothes:")
-        setupBox.operator("makeclothes.import_mhclo", text="Import clothes file")
-
-        humanBox = layout.box()
-        humanBox.label(text="Human", icon="MESH_DATA")
-        if not base_available:
-            humanBox.operator("makeclothes.importhuman", text="Import human")
-
-        humanBox.operator("makeclothes.mark_as_human", text="Mark as human")
-        humanBox.operator("makeclothes.check_human", text="Check human")
-        humanBox.operator("makeclothes.delete_helper", text="Delete helpers")
-
-        checkBox = layout.box()
-        checkBox.label(text="Check clothes", icon="MESH_DATA")
-        checkBox.operator("makeclothes.check_clothes", text="Check clothes")
-
+        # common settings (always displayed)
+        #
         commonSettingsBox = layout.box()
-        commonSettingsBox.label(text="Common settings", icon="PRESET")
+        commonSettingsBox.label(text="Common settings", icon="TOOL_SETTINGS")
         col = commonSettingsBox.column()
         row = col.row()
         row.prop(scn, 'MHOverwrite', text="Overwrite existent files")
@@ -61,8 +47,40 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
         row.label(text="Author")
         row.prop(scn, 'MhClothesAuthor', text="")
 
+        # get and check human
+        #
+        humanBox = layout.box()
+        humanBox.label(text="Human", icon="MESH_DATA")
+        if not base_available:
+            if context.scene.MH_predefinedMeshes != "---":
+                humanBox.prop(context.scene, 'MH_predefinedMeshes')
+                humanBox.operator("makeclothes.importpredef", text="Import predefined human")
+            humanBox.operator("makeclothes.importhuman", text="Import human (.obj)")
+
+        humanBox.operator("makeclothes.mark_as_human", text="Mark as human")
+        humanBox.operator("makeclothes.check_human", text="Check human")
+        humanBox.operator("makeclothes.delete_helper", text="Delete helpers")
+
+        # get and check clothes (same order as human)
+        #
+        setupBox = layout.box()
+        setupBox.label(text="Clothes", icon="MESH_DATA")
+
+        setupBox.label(text="Vertex group as clothes:")
+        setupBox.operator("makeclothes.extract_clothes", text="Extract clothes")
+
+        setupBox.label(text="Edit existent clothes:")
+        setupBox.operator("makeclothes.import_mhclo", text="Import clothes file")
+
+        setupBox.operator("makeclothes.mark_as_clothes", text="Mark as clothes")
+
+        setupBox.operator("makeclothes.check_clothes", text="Check clothes")
+
+
+        # the procedure itself
+        #
         produceBox = layout.box()
-        produceBox.label(text="Produce clothes", icon="MESH_DATA")
+        produceBox.label(text="Produce clothes", icon="MOD_CLOTH")
         if obj is None or obj.type != "MESH":
             produceBox.label(text="- select a visible mesh object -")
         else:

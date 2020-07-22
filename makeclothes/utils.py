@@ -16,7 +16,7 @@ from mathutils import Matrix
 from bpy_extras.io_utils import axis_conversion
 from io_scene_obj import import_obj
 
-LEAST_REQUIRED_MAKESKIN_VERSION = 20200116
+LEAST_REQUIRED_MAKESKIN_VERSION = 20200718
 _TRACING = True
 
 def getMyDocuments():
