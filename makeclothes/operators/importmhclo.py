@@ -230,7 +230,7 @@ class import_mhclo:
             while len(obj.data.materials) > 0:
                 obj.data.materials.pop(index=0)
             makeskinMaterial = MHMat(fileName=mhmat)
-            makeskinMaterial.assignAsNodesMaterialForObj(obj)
+            makeskinMaterial.assignAsNodesMaterialForObj(context.scene, obj, True)
         return
 
     def checkMakeSkinAvailable(self):
