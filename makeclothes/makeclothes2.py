@@ -11,9 +11,10 @@
 # [create clothes]
 
 import bpy
+from .extraproperties import  _globaltitle      # way to get the title (name & version)
 
 class MHC_PT_MakeClothesPanel(bpy.types.Panel):
-    bl_label = "MakeClothes2"
+    bl_label = _globaltitle
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "MakeClothes2"
@@ -23,10 +24,13 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
         scn = context.scene
 
         base_available = False
+        shape_keys = False
         for obj in scn.objects:
             if hasattr(obj, "MhObjectType"):
                 if obj.MhObjectType == "Basemesh":
                     base_available = True
+                    if  obj.data.shape_keys is not None:
+                        shape_keys = True
                     break
 
         obj = context.active_object
@@ -60,6 +64,8 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
         humanBox.operator("makeclothes.mark_as_human", text="Mark as human")
         humanBox.operator("makeclothes.check_human", text="Check human")
         humanBox.operator("makeclothes.delete_helper", text="Delete helpers")
+        if  shape_keys:
+            humanBox.operator("makeclothes.apply_shapekeys", text="Apply targets")
 
         # get and check clothes (same order as human)
         #

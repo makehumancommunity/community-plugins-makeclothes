@@ -23,7 +23,8 @@ class MHC_OT_Predefined(bpy.types.Operator):
         bpy.ops.wm.append(directory=filepath + '/Object/', link=False, autoselect=True, filename=obj)
 
         #
-        # get all objects and figure out the new mesh
+        # get all objects and figure out the new mesh, set this to human and set scale
+        # to decimeter
         #
         newObj = None
         for obj in context.scene.objects:
@@ -34,6 +35,8 @@ class MHC_OT_Predefined(bpy.types.Operator):
         if newObj is not None:
             context.view_layer.objects.active = newObj
             text = markAsHuman(context)
+            if hasattr(bpy.context.scene, "MhScaleMode"):
+                bpy.context.scene.MhScaleMode = "DECIMETER"
             self.report({'INFO'}, text)
         return {'FINISHED'}
 

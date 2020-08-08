@@ -11,6 +11,7 @@ from .importhuman import MHC_OT_ImportHumanOperator
 from .checkclothes import MHC_OT_CheckClothesOperator
 from .createclothes import MHC_OT_CreateClothesOperator
 from .checkhuman import MHC_OT_CheckHumanOperator
+from .apply_shapekeys import MHC_OT_ApplyShapeKeysOperator
 from .deletehelper import MHC_OT_DeleteHelper
 from .tagselector import MHC_OT_TagSelector
 from .importpredef import MHC_OT_Predefined
@@ -25,6 +26,7 @@ OPERATOR_CLASSES = [
     MHC_OT_CheckClothesOperator,
     MHC_OT_CreateClothesOperator,
     MHC_OT_CheckHumanOperator,
+    MHC_OT_ApplyShapeKeysOperator,
     MHC_OT_DeleteHelper,
     MHC_OT_TagSelector,
     MHC_OT_Predefined,
@@ -40,6 +42,7 @@ __all__ = [
     "MHC_OT_CheckClothesOperator",
     "MHC_OT_CreateClothesOperator",
     "MHC_OT_CheckHumanOperator",
+    "MHC_OT_ApplyShapeKeysOperator",
     "MHC_OT_DeleteHelper",
     "MHC_OT_TagSelector",
     "MHC_OT_Predefined",

@@ -4,11 +4,10 @@
 #  Authors: Joel Palmius
 #           black-punkduck
 
+# odd order has to be done not to get the title, is there a better way?
+
 from bpy.utils import register_class, unregister_class
-from .extraproperties import extraProperties
-from .makeclothes2 import MHC_PT_MakeClothesPanel
-from .infobox import MHC_OT_InfoBox,MHC_WarningBox
-from .operators import *
+from .extraproperties import extraProperties, _globaltitle
 
 bl_info = {
     "name": "MakeClothes",
@@ -19,6 +18,15 @@ bl_info = {
     "description": "Create MakeHuman Clothes",
     'wiki_url': "http://www.makehumancommunity.org/",
     "category": "MakeHuman"}
+
+
+extraproperties._globaltitle = bl_info["name"] + " v %d.%d.%d" % bl_info["version"]
+
+# now import rest with title set in MHC_PT_MakeClothesPanel
+#
+from .makeclothes2 import MHC_PT_MakeClothesPanel
+from .infobox import MHC_OT_InfoBox,MHC_WarningBox
+from .operators import *
 
 
 MAKECLOTHES2_CLASSES = []

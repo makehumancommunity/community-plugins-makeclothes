@@ -8,6 +8,8 @@ import json
 import os
 from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, CollectionProperty, FloatProperty
 
+_globaltitle = ""       # title is filled by __init__
+
 _licenses = []
 _licenses.append(("CC0",   "CC0", "Creative Commons Zero",                                                  1))
 _licenses.append(("CC-BY", "CC-BY", "Creative Commons Attribution",                                           2))

@@ -31,5 +31,7 @@ class MHC_OT_ImportHumanOperator(bpy.types.Operator, ImportHelper):
         obj = loadObjFile(context, self.properties.filepath)
         if obj is not None:
             text = markAsHuman(context)
+            if hasattr(bpy.context.scene, "MhScaleMode"):
+                bpy.context.scene.MhScaleMode = "DECIMETER"
             self.report({'INFO'}, text)
         return {'FINISHED'}
