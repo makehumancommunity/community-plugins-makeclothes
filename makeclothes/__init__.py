@@ -4,30 +4,14 @@
 #  Authors: Joel Palmius
 #           black-punkduck
 
-# odd order has to be done not to get the title, is there a better way?
-
 from bpy.utils import register_class, unregister_class
-from .extraproperties import extraProperties, _globaltitle
-
-bl_info = {
-    "name": "MakeClothes",
-    "author": "Joel Palmius",
-    "version": (2,1,0),
-    "blender": (2,80,0),
-    "location": "View3D > Properties > Make Target",
-    "description": "Create MakeHuman Clothes",
-    'wiki_url': "http://www.makehumancommunity.org/",
-    "category": "MakeHuman"}
-
-
-extraproperties._globaltitle = bl_info["name"] + " v %d.%d.%d" % bl_info["version"]
-
-# now import rest with title set in MHC_PT_MakeClothesPanel
-#
+from .extraproperties import extraProperties, bl_info
 from .makeclothes2 import MHC_PT_MakeClothesPanel
 from .infobox import MHC_OT_InfoBox,MHC_WarningBox
 from .operators import *
 
+# bl_info is placed in extra-properties to have access from everywhere and to avoid
+# ending up with a circular dependency
 
 MAKECLOTHES2_CLASSES = []
 MAKECLOTHES2_CLASSES.extend(OPERATOR_CLASSES)

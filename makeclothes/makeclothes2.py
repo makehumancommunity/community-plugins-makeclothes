@@ -11,10 +11,10 @@
 # [create clothes]
 
 import bpy
-from .extraproperties import  _globaltitle      # way to get the title (name & version)
+from .extraproperties import bl_info   # to get information about version
 
 class MHC_PT_MakeClothesPanel(bpy.types.Panel):
-    bl_label = _globaltitle
+    bl_label = bl_info["name"] + " v %d.%d.%d" % bl_info["version"]
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "MakeClothes2"
