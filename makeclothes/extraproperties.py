@@ -8,17 +8,6 @@ import json
 import os
 from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, CollectionProperty, FloatProperty
 
-bl_info = {
-    "name": "MakeClothes",
-    "author": "Joel Palmius",
-    "version": (2,1,0),
-    "blender": (2,80,0),
-    "location": "View3D > Properties > Make Target",
-    "description": "Create MakeHuman Clothes",
-    'wiki_url': "http://www.makehumancommunity.org/",
-    "category": "MakeHuman"}
-
-
 _licenses = []
 _licenses.append(("CC0",   "CC0", "Creative Commons Zero",                                                  1))
 _licenses.append(("CC-BY", "CC-BY", "Creative Commons Attribution",                                           2))

@@ -11,7 +11,7 @@
 # [create clothes]
 
 import bpy
-from .extraproperties import bl_info   # to get information about version
+from . import bl_info   # to get information about version
 
 class MHC_PT_MakeClothesPanel(bpy.types.Panel):
     bl_label = bl_info["name"] + " v %d.%d.%d" % bl_info["version"]
