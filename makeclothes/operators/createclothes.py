@@ -61,25 +61,8 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
         #
-        # in case that the human has shape keys, remove this one by one
-        # so that the last one will be accepted
-        #
-        if  humanObj.data.shape_keys is not None:
-            n = len (humanObj.data.shape_keys.key_blocks)
-            obj.active_shape_key_index = 0
-            for i in range(0, n):
-                bpy.ops.object.shape_key_remove(all=False)
-
-        bpy.ops.object.select_all(action='DESELECT')
-        if(clothesObj.select_get() is False):
-            clothesObj.select_set(True)
-
-        context.view_layer.objects.active = clothesObj
-        bpy.ops.object.mode_set(mode='OBJECT')
-        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-
-        #
         # create filename and check if already existent
+        #
         subdir = context.scene.MHClothesDestination
         rootDir = getClothesRoot(subdir)
         name = clothesObj.MhClothesName
@@ -90,11 +73,36 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
             self.report({'ERROR'}, "no clothes created.")
             return {'FINISHED'}
 
+        #
+        # do the checks before shape key is destroyed
+        #
         (b, info, error) = checkSanityClothes(clothesObj, humanObj)
         if b:
             bpy.ops.info.infobox('INVOKE_DEFAULT', title="Check Clothes", info=info, error=error)
             self.report({'ERROR'}, "no clothes created.")
             return {'FINISHED'}
+
+        # all checks done
+
+        #
+        # in case that the human has shape keys,
+        # add a new one as a mix of all and then remove these one by one
+        # so that the last one with its value will be accepted
+        #
+        if  humanObj.data.shape_keys is not None:
+            humanObj.shape_key_add(name=str(humanObj.active_shape_key.name)+"_applied", from_mix=True)
+            n = len (humanObj.data.shape_keys.key_blocks)
+            humanObj.active_shape_key_index = 0
+            for i in range(0, n):
+                bpy.ops.object.shape_key_remove(all=False)
+
+        bpy.ops.object.select_all(action='DESELECT')
+        if(clothesObj.select_get() is False):
+            clothesObj.select_set(True)
+
+        context.view_layer.objects.active = clothesObj
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 
         desc = clothesObj.MhClothesDesc
         license = context.scene.MhClothesLicense

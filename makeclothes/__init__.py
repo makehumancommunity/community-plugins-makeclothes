@@ -4,12 +4,9 @@
 #  Authors: Joel Palmius
 #           black-punkduck
 
-from bpy.utils import register_class, unregister_class
-from .extraproperties import extraProperties
-from .makeclothes2 import MHC_PT_MakeClothesPanel
-from .infobox import MHC_OT_InfoBox,MHC_WarningBox
-from .operators import *
-
+#
+# must be before(!) all imports
+#
 bl_info = {
     "name": "MakeClothes",
     "author": "Joel Palmius",
@@ -20,6 +17,11 @@ bl_info = {
     'wiki_url': "http://www.makehumancommunity.org/",
     "category": "MakeHuman"}
 
+from bpy.utils import register_class, unregister_class
+from .extraproperties import extraProperties
+from .makeclothes2 import MHC_PT_MakeClothesPanel
+from .infobox import MHC_OT_InfoBox,MHC_WarningBox
+from .operators import *
 
 MAKECLOTHES2_CLASSES = []
 MAKECLOTHES2_CLASSES.extend(OPERATOR_CLASSES)
