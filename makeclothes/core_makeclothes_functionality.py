@@ -8,7 +8,7 @@ import uuid
 import shutil
 import mathutils
 from mathutils import Vector
-from .utils import checkMakeSkinAvailable, LEAST_REQUIRED_MAKESKIN_VERSION
+from .utils import checkMakeSkinIntegrity
 
 _EVALUATED_MAKESKIN = False
 _MAKESKIN_AVAILABLE = False
@@ -149,16 +149,7 @@ class MakeClothes():
         global _MAKESKIN_AVAILABLE
 
         if not _EVALUATED_MAKESKIN:
-            ms = checkMakeSkinAvailable()
-            if ms:
-                from makeskin import MAKESKIN_VERSION
-                if MAKESKIN_VERSION >= LEAST_REQUIRED_MAKESKIN_VERSION:
-                    _MAKESKIN_AVAILABLE = True
-                    print("A useful version of MakeSkin is available")
-                else:
-                    print("MakeSkin is available, but in a too old version. At least " + str(LEAST_REQUIRED_MAKESKIN_VERSION) + " is required. Not showing related options.")
-            else:
-                print("MakeSkin is not available or not enabled.")
+            _MAKESKIN_AVAILABLE = checkMakeSkinIntegrity()
             _EVALUATED_MAKESKIN = True
 
         if _MAKESKIN_AVAILABLE and context:

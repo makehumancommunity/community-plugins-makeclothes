@@ -16,7 +16,7 @@ from mathutils import Matrix
 from bpy_extras.io_utils import axis_conversion
 from io_scene_obj import import_obj
 
-LEAST_REQUIRED_MAKESKIN_VERSION = 20200718
+LEAST_REQUIRED_MAKESKIN_VERSION = (0,9,0)
 _TRACING = True
 
 def getMyDocuments():
@@ -115,13 +115,22 @@ def loadObjFile(context, filename):
 
     return (None)
 
-def checkMakeSkinAvailable():
-    for path in paths():
-        for mod_name, mod_path in bpy.path.module_names(path):
-            is_enabled, is_loaded = check(mod_name)
-            if mod_name == "makeskin":
-                return is_enabled and is_loaded
-    return False
+# completely test if a required version is available
+#
+def checkMakeSkinIntegrity():
+    for mod_name in bpy.context.preferences.addons.keys():
+        if (mod_name == "makeskin"):
+            mod = sys.modules[mod_name]
+            vers = mod.bl_info.get('version', (-1, -1, -1))
+            if vers >= LEAST_REQUIRED_MAKESKIN_VERSION:
+                print("A useful version of MakeSkin is available")
+                return (True)
+            print("MakeSkin is available, but in a too old version. At least " + str(LEAST_REQUIRED_MAKESKIN_VERSION) + " is required. Not showing related options.")
+            return (False)
+
+    print("MakeSkin is not available or not enabled.")
+    return (False)
+
 
 def trace(message = None):
     global _TRACING
