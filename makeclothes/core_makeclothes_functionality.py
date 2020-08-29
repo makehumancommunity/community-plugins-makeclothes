@@ -222,7 +222,7 @@ class MakeClothes():
 
             errtext = mat.writeMHmat(self.clothesObj, outputFile)
             if errtext:
-                return (False, checkImg)
+                return (False, errtext)
 
         else:
             print("Using limited MakeClothes material model, ie not MakeSkin")
@@ -559,8 +559,8 @@ class MakeClothes():
                     f.write ("\ndelete_verts\n" + self.deleteVerticesOutput + "\n")
                 f.close()
                 return (True, "")
-        except EnvironmentError:
-            return (False, "Cannot write " + outputFile)
+        except EnvironmentError as e:
+            return (False, "Cannot write " + outputFile + "\n" + str(e))
 
     def writeObj(self):
         # Yes, I'm aware there is a wavefront exporter in the blender API already. However, we need to make
@@ -610,8 +610,8 @@ class MakeClothes():
                         f.write("\n")
                 f.close()
                 return (True, "")
-        except EnvironmentError:
-            return (False, "Cannot write " + outputFile)
+        except EnvironmentError as e:
+            return (False, "Cannot write " + outputFile + "\n" + str(e))
 
     def writeMhMat(self):
         mhmat = MHMaterial(self.clothesObj)
@@ -633,5 +633,5 @@ class MakeClothes():
                 f.close()
 
                 return (True, "")
-        except EnvironmentError:
-            return (False, "Cannot write " + outputFile)
+        except EnvironmentError as e:
+            return (False, "Cannot write " + outputFile + "\n" + str(e))
