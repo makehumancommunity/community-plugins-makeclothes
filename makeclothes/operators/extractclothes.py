@@ -12,11 +12,10 @@ def EvaluateGroupsCallback(self, context):
 
     if hasattr (context, "object"):
         (meshtype, jlines) = _loadMeshJson(context.object)
-        cnt = 1
-        for gname in jlines["select_groups"]:
+        for idx, gname in enumerate(jlines["select_groups"]):
             gl_name = gname.lower()
-            _extractGroup.append((gname, gl_name.capitalize(), "Create clothes from " + gl_name, cnt))
-            cnt += 1
+            _extractGroup.append((gname, gl_name.capitalize(), "Create clothes from " + gl_name, idx))
+
     return (_extractGroup)
 
 class MHC_OT_ExtractClothesOperator(bpy.types.Operator):
@@ -25,7 +24,8 @@ class MHC_OT_ExtractClothesOperator(bpy.types.Operator):
     bl_label = "Extract helper as clothes"
     bl_options = {'REGISTER', 'UNDO'}
 
-    extract: bpy.props.EnumProperty(items=EvaluateGroupsCallback, name="Extract", description=_extractGroupDescription)
+    extract: bpy.props.EnumProperty(items=EvaluateGroupsCallback, name="Extract", description=_extractGroupDescription,
+                                    default=2)
 
     @classmethod
     def poll(self, context):
