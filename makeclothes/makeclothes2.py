@@ -72,8 +72,8 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
         setupBox = layout.box()
         setupBox.label(text="Clothes", icon="MESH_DATA")
 
-        setupBox.label(text="Vertex group as clothes:")
-        setupBox.operator("makeclothes.extract_clothes", text="Extract clothes")
+        setupBox.label(text="Optional base for clothes:")
+        setupBox.operator("makeclothes.extract_clothes", text="Extract from Helper")
 
         setupBox.label(text="Edit existent clothes:")
         setupBox.operator("makeclothes.import_mhclo", text="Import clothes file")

@@ -103,13 +103,18 @@ class MHC_OT_ExtractClothesOperator(bpy.types.Operator):
 
         print(groupIndexes)
 
+        # delete vertices which do not belong to one of the groups of groupIndexes
+        #
         vertsToDelete = []
         for vert in humanObj.data.vertices:
-            doDelete = True
             if len(vert.groups) > 0:
-                # Assume each vertex belongs to only one group
-                gidx = vert.groups[0].group
-                if not gidx in groupIndexes:
+                doDelete = True
+                for grp in vert.groups:
+                    gidx = grp.group
+                    if gidx in groupIndexes:        # so it is at least in one group not to be deleted ...
+                        doDelete = False
+                        break
+                if doDelete is True:
                     vertsToDelete.append(vert.index)
             else:   # delete those belonging to no group
                 vertsToDelete.append(vert.index)
