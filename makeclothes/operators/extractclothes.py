@@ -24,8 +24,7 @@ class MHC_OT_ExtractClothesOperator(bpy.types.Operator):
     bl_label = "Extract helper as clothes"
     bl_options = {'REGISTER', 'UNDO'}
 
-    extract: bpy.props.EnumProperty(items=EvaluateGroupsCallback, name="Extract", description=_extractGroupDescription,
-                                    default=2)
+    extract: bpy.props.EnumProperty(items=EvaluateGroupsCallback, name="Extract", description=_extractGroupDescription)
 
     @classmethod
     def poll(self, context):
