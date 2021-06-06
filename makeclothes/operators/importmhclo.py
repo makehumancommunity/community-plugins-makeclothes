@@ -37,18 +37,22 @@ class import_mhclo:
         hverts = human.data.vertices
         hl = len(hverts)        # number of base vertices
 
-        # test if we inside mesh, if not, leave
-        #
-        if self.xs[0] >= hl or self.xs[1] > hl \
-            or self.ys[0] >= hl or self.ys[1] >= hl \
-            or self.zs[0] >= hl or self.zs[1] >= hl:
-            return
+        s0 = s1 = s2 = 1.0      # predefine it to 1, in case shear values had been used
 
-        # get sizes
-        #
-        s0 = abs(hverts[self.xs[0]].co[0] - hverts[self.xs[1]].co[0]) / self.xs[2]
-        s2 = abs(hverts[self.ys[0]].co[2] - hverts[self.ys[1]].co[2]) / self.ys[2]
-        s1 = abs(hverts[self.zs[0]].co[1] - hverts[self.zs[1]].co[1]) / self.zs[2]
+        if self.xs is not None and self.ys is not None and self.zs is not None:
+
+            # test if we are inside the mesh, if not, leave
+            #
+            if self.xs[0] >= hl or self.xs[1] > hl \
+                or self.ys[0] >= hl or self.ys[1] >= hl \
+                or self.zs[0] >= hl or self.zs[1] >= hl:
+                return
+
+            # get sizes
+            #
+            s0 = abs(hverts[self.xs[0]].co[0] - hverts[self.xs[1]].co[0]) / self.xs[2]
+            s2 = abs(hverts[self.ys[0]].co[2] - hverts[self.ys[1]].co[2]) / self.ys[2]
+            s1 = abs(hverts[self.zs[0]].co[1] - hverts[self.zs[1]].co[1]) / self.zs[2]
 
         dverts = self.clothes.data.vertices
 
@@ -243,14 +247,18 @@ class import_mhclo:
 
     def setScalings (self, context, human):
         (baseMeshType, meshConfig) = _loadMeshJson(human)
-        for bodypart in meshConfig["dimensions"]:
-            dims = meshConfig["dimensions"][bodypart]
-            # 
-            # I think it is okay to check only one dimension to figure out on
-            # what the piece of cloth was created
-            #
-            if dims['xmin'] == self.xs[0] and dims['xmax'] == self.xs[1]:
-                context.active_object.MhOffsetScale = bodypart
+        #
+        # I think it is okay to check only one dimension to figure out on
+        # what the piece of cloth was created
+        # if it is not set use first key
+        #
+        if self.xs is None:
+            context.active_object.MhOffsetScale = next(iter(meshConfig["dimensions"]))
+        else:
+            for bodypart in meshConfig["dimensions"]:
+                dims = meshConfig["dimensions"][bodypart]
+                if dims['xmin'] == self.xs[0] and dims['xmax'] == self.xs[1]:
+                    context.active_object.MhOffsetScale = bodypart
         return
 
 class MHC_OT_ImportClothesOperator(bpy.types.Operator, ImportHelper):
