@@ -37,7 +37,13 @@ class import_mhclo:
         hverts = human.data.vertices
         hl = len(hverts)        # number of base vertices
 
-        s0 = s1 = s2 = 1.0      # predefine it to 1, in case shear values had been used
+        # Figure out an appropriate fallback scale in case scale isn't set explicitly in mhclo
+        # Use 1.0 if not set as attribute on human, otherwise use the attribute from human
+        fallback_scale = 1.0
+        if human and hasattr(human, "MhScaleFactor") and human.MhScaleFactor:
+            fallback_scale = human.MhScaleFactor
+
+        s0 = s1 = s2 = fallback_scale
 
         if self.xs is not None and self.ys is not None and self.zs is not None:
 
