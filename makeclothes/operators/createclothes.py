@@ -27,7 +27,7 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
 
         (b, info, error) = checkSanityHuman(context)
         if b:
-            bpy.ops.info.infobox('INVOKE_DEFAULT', title="Check Human", info=info, error=error)
+            bpy.ops.makeclothes.infobox('INVOKE_DEFAULT', title="Check Human", info=info, error=error)
             return {'FINISHED'}
 
         # since we tested the existence of a human above there is exactly one
@@ -69,7 +69,7 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
 
         filename = os.path.join(rootDir,name)
         if context.scene.MHOverwrite is False and os.path.isdir(filename):
-            bpy.ops.info.warningbox('INVOKE_DEFAULT', title="This path is already existent, to overwrite change common settings of MakeClothes", info=filename)
+            bpy.ops.makeclothes.warningbox('INVOKE_DEFAULT', title="This path is already existent, to overwrite change common settings of MakeClothes", info=filename)
             self.report({'ERROR'}, "no clothes created.")
             return {'FINISHED'}
 
@@ -78,7 +78,7 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
         #
         (b, info, error) = checkSanityClothes(clothesObj, humanObj)
         if b:
-            bpy.ops.info.infobox('INVOKE_DEFAULT', title="Check Clothes", info=info, error=error)
+            bpy.ops.makeclothes.infobox('INVOKE_DEFAULT', title="Check Clothes", info=info, error=error)
             self.report({'ERROR'}, "no clothes created.")
             return {'FINISHED'}
 

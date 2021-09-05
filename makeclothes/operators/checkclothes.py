@@ -27,5 +27,5 @@ class MHC_OT_CheckClothesOperator(bpy.types.Operator):
         bpy.ops.object.mode_set(mode='OBJECT')
 
         (b, info, error) = checkSanityClothes(context.active_object)
-        bpy.ops.info.infobox('INVOKE_DEFAULT', title="Check Clothes", info=info, error=error)
+        bpy.ops.makeclothes.infobox('INVOKE_DEFAULT', title="Check Clothes", info=info, error=error)
         return {'FINISHED'}

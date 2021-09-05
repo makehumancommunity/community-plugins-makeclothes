@@ -6,7 +6,7 @@
 import bpy
 
 class MHC_OT_InfoBox(bpy.types.Operator):
-    bl_idname = "info.infobox"
+    bl_idname = "makeclothes.infobox"
     bl_label = ""
 
     info: bpy.props.StringProperty( name = "info", description = "information", default = '')
@@ -48,8 +48,8 @@ class MHC_OT_InfoBox(bpy.types.Operator):
             ibox = box.box()
             ibox.label(icon="CHECKBOX_HLT", text="no errors")
 
-class MHC_WarningBox(bpy.types.Operator):
-    bl_idname = "info.warningbox"
+class MHC_OT_WarningBox(bpy.types.Operator):
+    bl_idname = "makeclothes.warningbox"
     bl_label = ""
 
     info: bpy.props.StringProperty( name = "info", description = "information", default = '')
