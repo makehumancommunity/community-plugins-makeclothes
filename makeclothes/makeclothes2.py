@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-#  Author: Joel Palmius
+#  Author: Joel Palmius, punkduck
 
 # layout:
 #
@@ -44,6 +44,8 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
         row.prop(scn, 'MHOverwrite', text="Overwrite existent files")
         row = col.row()
         row.prop(scn, 'MHAllowMods', text="Allow modifiers")
+        row = col.row()
+        row.prop(scn, 'MHDebugFile', text="Save additional debug file")
         row = col.row()
         row.label(text="License")
         row.prop(scn, 'MhClothesLicense', text="")

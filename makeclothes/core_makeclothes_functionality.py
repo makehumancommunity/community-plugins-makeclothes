@@ -50,7 +50,6 @@ class _VertexMatch():
     def __init__(self, clothesVertexIndex, clothesVertexX, clothesVertexY, clothesVertexZ):
         self.index = clothesVertexIndex
         self.exactMatch = None
-        self.rigidMatch = None
         self.closestHumanVertexIndices = [-1, -1, -1]
         self.weights = [0.0, 0.0, 0.0]
         self.distance = [0.0, 0.0, 0.0]
@@ -61,9 +60,6 @@ class _VertexMatch():
 
     def markExact(self, humanVertexIndex):
         self.exactMatch = humanVertexIndex
-
-    def markRigid(self, humanVertexIndex):
-        self.rigidMatch = humanVertexIndex
 
     def setWeights(self, w1, w2, w3):
         self.weights[0] = w1
@@ -94,13 +90,11 @@ class _FaceMatch():
     def __init__(self, humanObj, humanFaceIdx, clothesVertCoords):
         self.faceIndex = humanFaceIdx
         poly = humanObj.data.polygons[humanFaceIdx]
-        self.participatingVerts = []
         self.score = 1
         mx = 0.0
         my = 0.0
         mz = 0.0
         for vertIdx in poly.vertices:
-            self.participatingVerts.append(vertIdx)
             vert = humanObj.data.vertices[vertIdx]
             mx = mx + vert.co[0]
             my = my + vert.co[1]
@@ -110,9 +104,6 @@ class _FaceMatch():
         mz = mz / len(poly.vertices)
         self.medianPoint = [mx, my, mz]
         self.distance = _distance(self.medianPoint, clothesVertCoords)
-
-    def containsVert(self, vertIdx):
-        return vertIdx in self.participatingVerts
 
     def getMedianPoint(self):
         return self.medianPoint
@@ -128,8 +119,10 @@ class MakeClothes():
         self.humanObj = humanObj
         if context:
             self.clothesmesh = MHMesh(clothesObj, context=context, allow_modifiers=context.scene.MHAllowMods)
+            self.debug = context.scene.MHDebugFile
         else:
             self.clothesmesh = MHMesh(clothesObj)
+            self.debug = False
         self.humanmesh = MHMesh(humanObj)
 
         # predefine size of the array needed 
@@ -140,6 +133,7 @@ class MakeClothes():
         self.exportAuthor = author
         self.exportDescription = description
         self.scales = [1.0, 1.0, 1.0]           # x_scale, y_scale, z_scale
+        self.isTriangle = False                 # used for meshes with exact 3 vertices
         self.deleteVerticesOutput = ""
         self.clothesmesh.getAdditionalIndices() 
         self.clothesmesh.getUVforExport()       # method to assign UVs to mesh
@@ -177,7 +171,12 @@ class MakeClothes():
         if b is False:
             return (False, text)
 
-        self.findBestFaces()
+        # in case of a mesh with only three vertices to follow, no additional work
+        #
+        if self.isTriangle is False:
+            self.findBestFaces()
+            self.findExactNeighbors()
+
         self.findWeightsAndDistances()
         self.evaluateDeleteVertices()
 
@@ -230,9 +229,10 @@ class MakeClothes():
             if b is False:
                 return (False, hint)
 
-        if True:
+        if self.debug:
             self.writeDebug()
-            self.selectHumanVertices()
+
+        self.selectHumanVertices()
         return (True, "")
 
     def findClosestVertices(self):
@@ -246,7 +246,7 @@ class MakeClothes():
                 next
 
             # determine kd tree, also delivers number of vertices per group
-            # 3 means rigid group, then an array is given
+            # 3 means triangle group, then an array is given
             #
             (size, kdtree) = self.humanmesh.vertexGroupKDTree(vgroupName) 
             if size < 3:    # group with less than 3 vertices does not work
@@ -263,12 +263,15 @@ class MakeClothes():
                 if area < 0.0001:
                     return (False, "Group " + vgroupName + ": The vertices create a triangle smaller than 0.0001, this will result in bad geometry")
 
+                # mark it a triangle to avoid further calculations
+                #
+                self.isTriangle = True
+
                 for vertex in clothesVertices:
                     vertexMatch = _VertexMatch(vertex[0], vertex[1], vertex[2], vertex[3])  # idx x y z
                     hCoord = []
                     j = 0
                     for vert in kdtree:     # an array in this case
-                        vertexMatch.markRigid(vert.index)
                         vertexMatch.closestHumanVertexIndices[j] = vert.index
                         vertexMatch.closestHumanVertexCoordinates[j] = vert.co
                         hCoord.append(self.humanmesh.allVertexCoordinates[vert.index])
@@ -299,60 +302,127 @@ class MakeClothes():
     def findBestFaces(self):
         # In this method we will go through the vertexmatches and if needed switch which vertices are selected so that all
         # vertices belong to the same face.
+
         for vm in self.vertexMatches:
-            if vm.exactMatch is None and vm.rigidMatch is None:
-                faceMatches = []
-                maxScore = 1
-                for i in [0, 1, 2]:
-                    vertIdx = vm.closestHumanVertexIndices[i]
-                    for polygon in self.humanmesh.vertPolygons[vertIdx]:
-                        faceIdx = polygon.index
-                        alreadyAdded = False
-                        for fm in faceMatches:
-                            if fm.faceIndex == faceIdx:
-                                alreadyAdded = True
-                                fm.score = fm.score + 1  # a face that matches more than one of our verts is more important
-                                if fm.score > maxScore:
-                                    maxScore = fm.score
-                                break
-                        if not alreadyAdded:
-                            fm = _FaceMatch(self.humanObj, faceIdx, [vm.x, vm.y, vm.z])
-                            faceMatches.append(fm)
-                bestFaceMatches = []
-                if maxScore == 1:
-                    bestFaceMatches = faceMatches
-                else:
+
+            # exact matches stay as they are
+            #
+            if vm.exactMatch is not None:
+                continue
+
+            # check if the vertices already form a polygon, then no change is needed, this avoids that we take different vertices from this
+            # polygon later in case of quad
+            #
+            forms_polygon = 0
+            for polygon in self.humanmesh.vertPolygons[vm.closestHumanVertexIndices[0]]:
+                if vm.closestHumanVertexIndices[1] in polygon.vertices and vm.closestHumanVertexIndices[2] in polygon.vertices:
+                    forms_polygon = 1
+                    break
+            if forms_polygon:
+                continue
+ 
+            # now check for a better face, collect all faces for each vertex in a list
+            # if a face is already added increase score
+            #
+            faceMatches = []
+            maxScore = 1
+            for i in [0, 1, 2]:
+                vertIdx = vm.closestHumanVertexIndices[i]
+                for polygon in self.humanmesh.vertPolygons[vertIdx]:
+                    faceIdx = polygon.index
+                    alreadyAdded = False
                     for fm in faceMatches:
-                        if fm.score == maxScore:
-                            bestFaceMatches.append(fm)
-                bestFace = None
-                for fm in bestFaceMatches:
-                    if bestFace is None:
+                        if fm.faceIndex == faceIdx:
+                            alreadyAdded = True
+                            fm.score = fm.score + 1  # a face that matches more than one of our verts is more important
+                            if fm.score > maxScore:
+                                maxScore = fm.score
+                            break
+                    if not alreadyAdded:
+                        fm = _FaceMatch(self.humanObj, faceIdx, [vm.x, vm.y, vm.z])
+                        faceMatches.append(fm)
+
+            # now figure out the best faces, all in case of maxScore = 1 otherwise those with maxscore
+            #
+            bestFaceMatches = []
+            if maxScore == 1:
+                bestFaceMatches = faceMatches
+            else:
+                for fm in faceMatches:
+                    if fm.score == maxScore:
+                        bestFaceMatches.append(fm)
+
+            # now check face with lowest distance
+            #
+            bestFace = None
+            for fm in bestFaceMatches:
+                if bestFace is None:
+                    bestFace = fm
+                else:
+                    if fm.distance < bestFace.distance:
                         bestFace = fm
-                    else:
-                        if fm.distance < bestFace.distance:
-                            bestFace = fm
 
-                # Here "bestFace" should be the face whose median point is the shortest
-                # distance away from the clothes vert
+            # Here "bestFace" should be the face whose median point is the shortest
+            # distance away from the clothes vert
 
-                # We should now ideally pick those verts in the face which are the
-                # closest to the clothes vert. But for the sake of efficiency we
-                # will instead pick the first three verts listed in the face
+            # We should now ideally pick those verts in the face which are the
+            # closest to the clothes vert. But for the sake of efficiency we
+            # will instead pick the first three verts listed in the face
 
-                bestVerts = bestFace.participatingVerts
+            bestVerts = self.humanObj.data.polygons[bestFace.faceIndex].vertices
+            vIdxs = [0,0,0]
+            vCos = [[0,0,0], [0,0,0], [0,0,0]]
 
-                vIdxs = [0,0,0]
-                vCos = [[0,0,0], [0,0,0], [0,0,0]]
+            for i in [0, 1, 2]:
+                idx = bestVerts[i]
+                vIdxs[i] = idx
+                co = self.humanObj.data.vertices[idx].co
+                vCos[i] = [co[0], co[1], co[2]]
 
-                for i in [0, 1, 2]:
-                    idx = bestVerts[i]
-                    vIdxs[i] = idx
-                    co = self.humanObj.data.vertices[idx].co
-                    vCos[i] = [co[0], co[1], co[2]]
+            vm.closestHumanVertexIndices = vIdxs
+            vm.closestHumanVertexCoordinates = vCos
 
-                vm.closestHumanVertexIndices = vIdxs
-                vm.closestHumanVertexCoordinates = vCos
+    def findExactNeighbors(self):
+        symverts = [None, None]
+        hmesh = self.humanObj.data
+
+        for vm in self.vertexMatches:
+            #
+            # only  consider faces not bound to a single vertex
+            #
+            if vm.exactMatch is not None:
+                continue
+
+            # edge neighbors
+            # check number of exact neighbors, we need two for using the edge
+            #
+            exact = 0
+            for edge in self.clothesmesh.vertEdges[vm.index]:
+                if exact == 2:
+                    break
+                # v0 oder v1
+                res_id = edge.vertices[0] if (vm.index != edge.vertices[0]) else edge.vertices[1]
+                if self.vertexMatches[res_id].exactMatch is not None:
+                    symverts[exact] = self.vertexMatches[res_id].exactMatch
+                    exact += 1
+
+            # now we need to find the polygon
+            #
+            if exact == 2:
+                # find the polygon with this edge
+                for polygon in self.humanmesh.vertPolygons[symverts[0]]:
+                    if symverts[1] in polygon.vertices:
+                        #
+                        # okay this is the polygon, we need a third vertex
+                        #
+                        for v in polygon.vertices:
+                            if v not in symverts:
+                                #
+                                # v is the last one ... we are complete
+                                vm.closestHumanVertexIndices = (symverts[0], symverts[1], v)
+                                vm.closestHumanVertexCoordinates = (hmesh.vertices[symverts[0]].co, hmesh.vertices[symverts[1]].co, hmesh.vertices[v].co)
+                                break
+                        break
 
     def findWeightsAndDistances(self):
         for vertexMatch in self.vertexMatches:
@@ -367,14 +437,15 @@ class MakeClothes():
                 B = Vector(self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[1]])
                 C = Vector(self.humanmesh.allVertexCoordinates[vertexMatch.closestHumanVertexIndices[2]])
 
+                # The vertex on the clothes is the Vector Q
+                Q = Vector(( vertexMatch.x, vertexMatch.y, vertexMatch.z))
+
                 # We need the normal for this triangle. Normally it is calculated with cross-product using the
                 # distance of e.g. B-A and C-A, but blender has a function implemented for that
 
                 N= mathutils.geometry.normal (A, B, C)
                 # print ("normal vector is " + str(N))
 
-                # The vertex on the clothes is the Vector Q
-                Q = Vector(( vertexMatch.x, vertexMatch.y, vertexMatch.z))
 
                 # transform normal vector to corner of triangle and recalculate length 
                 # new vector is R (direction is the same)
@@ -433,43 +504,16 @@ class MakeClothes():
             os.makedirs(self.dirName)
 
     def writeDebug(self):
-        outputFile = os.path.join(self.dirName, self.cleanedName + ".debug.csv")
+        outputFile = os.path.join(self.dirName, self.cleanedName + ".debug.txt")
         with open(outputFile, "w") as f:
-            f.write("clothesIdx,clVertX,clVertY,clVertZ,hIdx1,hVert1x,hVert1y,hVert1z,dist1,hIdx2,hVert2x,hVert2y,hVert2z,dist2,hIdx3,hVert3x,hVert3y,hVert3z,dist3,sumdist,dist1pct,dist2pct,dist3pct,medianX,medianY,medianZ,medDistX,medDistY,medDistZ\n")
             for vm in self.vertexMatches:
-
-                if vm.exactMatch is None: # No need to debug exact matches
-                    f.write("%d,%.4f,%.4f,%.4f" % (vm.index, vm.x, vm.y, vm.z)) # clothes
-                    sumdist = 0.0
-                    dist = [0.0, 0.0, 0.0]
-                    for i in [0,1,2]:
-                        idx = vm.closestHumanVertexIndices[i]
-                        co = vm.closestHumanVertexCoordinates[i]
-                        dist[i] = _distance([vm.x,vm.y,vm.z],co)
-                        sumdist = sumdist + dist[i]
-                        f.write(",%d,%.4f,%.4f,%.4f,%.4f" % (idx,co[0],co[1],co[2],dist[i])) # human
-
-                    f.write(",%.4f" % sumdist)
-
-                    dpct = [0,0,0]
-                    xMedian = 0
-                    yMedian = 0
-                    zMedian = 0
-                    for i in [0, 1, 2]:
-                        dpct[i] = dist[i] / sumdist
-                        co = vm.closestHumanVertexCoordinates[i]
-                        xMedian = xMedian + co[0] * dpct[i]
-                        yMedian = yMedian + co[1] * dpct[i]
-                        zMedian = zMedian + co[2] * dpct[i]
-                        f.write(",%.4f" % dpct[i]) # vert distance as fraction of total distance, ie vertex weight
-
-                    f.write(",%.4f,%.4f,%.4f" % (xMedian, yMedian, zMedian)) # median point of human vertices, shifted by weights
-
-                    medDistX = vm.x - xMedian
-                    medDistY = vm.y - yMedian
-                    medDistZ = vm.z - zMedian
-
-                    f.write(",%.4f,%.4f,%.4f\n" % (medDistX, medDistY, medDistZ)) # distance between median point and clothes vertex
+                if vm.exactMatch is not None:
+                    f.write ("%d => %d\n" % (vm.index, vm.exactMatch))
+                else:
+                    f.write("%d => " % (vm.index)) # clothes
+                    f.write(" I=(%d, %d, %d)" % (vm.closestHumanVertexIndices[0], vm.closestHumanVertexIndices[1], vm.closestHumanVertexIndices[2])) 
+                    f.write(" W=(%.4f, %.4f, %.4f)" % (vm.weights[0], vm.weights[1], vm.weights[2]))
+                    f.write(" D=(%.4f, %.4f, %.4f)\n" % (vm.distance[0], vm.distance[1], vm.distance[2]))
 
     def selectHumanVertices(self):
         for vm in self.vertexMatches:

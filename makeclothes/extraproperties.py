@@ -94,6 +94,7 @@ def extraProperties():
     bpy.types.Scene.MHClothesDestination = bpy.props.EnumProperty(items=_destination, name="Clothes destination", description=_destination_description, default="clothes")
     bpy.types.Scene.MHOverwrite = BoolProperty(name="Overwrite existent clothes", description="Must be marked, if you want to replace old files (.mhclo, .obj etc.)", default=False)
     bpy.types.Scene.MHAllowMods = BoolProperty(name="Allow modifiers", description="Must be marked, if modifiers should be taken into account", default=True)
+    bpy.types.Scene.MHDebugFile = BoolProperty(name="Save debug file", description="Must be marked, if a debug file should be saved", default=False)
     bpy.types.Scene.MhMcMakeSkin = BoolProperty(name="Use makeskin", description="Use MakeSkin (if available) for writing material. This will be silently ignored if MakeSkin is not installed. For this to work you should have created the object's material using MakeSkin.", default=False)
 
     # Object properties, normally set by MPFB
