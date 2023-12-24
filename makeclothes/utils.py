@@ -14,7 +14,9 @@ from addon_utils import check, paths, enable, modules
 #
 from mathutils import Matrix
 from bpy_extras.io_utils import axis_conversion
-from io_scene_obj import import_obj
+
+if bpy.app.version < (4,0,0):
+    from io_scene_obj import import_obj
 
 LEAST_REQUIRED_MAKESKIN_VERSION = (0,9,0)
 _TRACING = True
@@ -98,10 +100,13 @@ def loadObjFile(context, filename):
     for obj in context.scene.objects:
         oldnames.append (obj.name)
 
-    global_matrix = (Matrix.Scale(1.0, 4) @ 
-        axis_conversion(from_forward='-Y',to_forward='-Z', from_up='Z', to_up='-Y',).to_4x4())
-    import_obj.load(context, filename, use_split_objects=False,
-        use_groups_as_vgroups=True, global_matrix=global_matrix)
+    if bpy.app.version >= (4,0,0):
+        bpy.ops.wm.obj_import(filepath=filename, use_split_objects=False, import_vertex_groups=True)
+    else:
+        global_matrix = (Matrix.Scale(1.0, 4) @
+            axis_conversion(from_forward='-Y',to_forward='-Z', from_up='Z', to_up='-Y',).to_4x4())
+        import_obj.load(context, filename, use_split_objects=False,
+            use_groups_as_vgroups=True, global_matrix=global_matrix)
 
     #
     # get all objects and figure out the new mesh
