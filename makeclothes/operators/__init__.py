@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-#  Author: Joel Palmius
+#  Author: Joel Palmius, black-punkduck
 
 from .extractclothes import MHC_OT_ExtractClothesOperator
 from .importmhclo import MHC_OT_ImportClothesOperator

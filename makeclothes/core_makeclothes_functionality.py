@@ -114,21 +114,40 @@ class _FaceMatch():
 
 class MakeClothes():
 
-    def __init__(self, clothesObj, humanObj, exportName="clothes", exportRoot="/tmp", license="CC0", author="unknown", description="No description", context=None):
+    def __init__(self, context, name, root):
+        """
+        init precalculates names and use of makeskin
+        """
+        self.context = context
+        self.exportName = name
+        self.exportRoot = root
+
+        cleanedName = re.sub(r'\s+',"_",self.exportName)
+        self.cleanedName = re.sub(r'[./\\]+', "", cleanedName)
+        self.dirName = os.path.join(self.exportRoot,cleanedName)
+        self.namePrefix = os.path.join(self.dirName, self.cleanedName)
+        self.debug = context.scene.MHDebugFile
+
+        global _EVALUATED_MAKESKIN
+        global _MAKESKIN_AVAILABLE
+
+        self.useMakeSkin = False
+        if not _EVALUATED_MAKESKIN:
+            _MAKESKIN_AVAILABLE = checkMakeSkinIntegrity()
+            _EVALUATED_MAKESKIN = True
+
+        if _MAKESKIN_AVAILABLE and context:
+            self.useMakeSkin = context.scene.MhMcMakeSkin
+
+
+    def params(self, clothesObj, humanObj, license="CC0", author="unknown", description="No description", overwriteMaterial=True):
         self.clothesObj = clothesObj
         self.humanObj = humanObj
-        if context:
-            self.clothesmesh = MHMesh(clothesObj, context=context, allow_modifiers=context.scene.MHAllowMods)
-            self.debug = context.scene.MHDebugFile
-        else:
-            self.clothesmesh = MHMesh(clothesObj)
-            self.debug = False
+        self.clothesmesh = MHMesh(clothesObj, context=self.context, allow_modifiers=self.context.scene.MHAllowMods)
         self.humanmesh = MHMesh(humanObj)
 
         # predefine size of the array needed 
         self.vertexMatches = [None] * len(self.clothesmesh.data.vertices)
-        self.exportName = exportName
-        self.exportRoot = exportRoot
         self.exportLicense = license
         self.exportAuthor = author
         self.exportDescription = description
@@ -137,22 +156,21 @@ class MakeClothes():
         self.deleteVerticesOutput = ""
         self.clothesmesh.getAdditionalIndices() 
         self.clothesmesh.getUVforExport()       # method to assign UVs to mesh
-        self.useMakeSkin = False
+        self.overwriteMaterial = overwriteMaterial
 
-        global _EVALUATED_MAKESKIN
-        global _MAKESKIN_AVAILABLE
+    def mhcloExists(self):
+        """
+        checks if file is there and returns pathname for piece of cloth
+        """
+        return os.path.isfile(self.namePrefix+".mhclo"), self.dirName
 
-        if not _EVALUATED_MAKESKIN:
-            _MAKESKIN_AVAILABLE = checkMakeSkinIntegrity()
-            _EVALUATED_MAKESKIN = True
+    def mhmatExists(self):
+        return os.path.isfile(self.namePrefix+".mhmat")
 
-        if _MAKESKIN_AVAILABLE and context:
-            self.useMakeSkin = context.scene.MhMcMakeSkin
-
-    #
-    # here the work is done. __init__ cannot provide proper return codes
-    #
     def make(self):
+        """
+        the program itself
+        """
 
         self.bodyPart = self.clothesObj.MhOffsetScale       # get the scalings
         if len(self.bodyPart) == 0:
@@ -180,9 +198,6 @@ class MakeClothes():
         self.findWeightsAndDistances()
         self.evaluateDeleteVertices()
 
-        self.dirName = None
-        self.cleanedName = None
-
         self.setupTargetDirectory()
 
         # 
@@ -208,26 +223,29 @@ class MakeClothes():
         if b is False:
             return (False, hint)
 
-        if self.useMakeSkin:
-            print("Using makeskin to write material")
-            from makeskin import MHMat as MakeSkinMat
+        if self.overwriteMaterial or not self.mhmatExists():
+            if self.useMakeSkin:
+                print("Using makeskin to write material")
+                from makeskin import MHMat as MakeSkinMat
 
-            mat = MakeSkinMat(self.clothesObj)
-            outputFile = os.path.join(self.dirName, self.cleanedName + ".mhmat")
+                mat = MakeSkinMat(self.clothesObj)
+                outputFile = os.path.join(self.dirName, self.cleanedName + ".mhmat")
 
-            checkImg = mat.checkAllTexturesAreSaved()
-            if checkImg:
-                return (False, checkImg)
+                checkImg = mat.checkAllTexturesAreSaved()
+                if checkImg:
+                    return (False, checkImg)
 
-            errtext = mat.writeMHmat(self.clothesObj, outputFile)
-            if errtext:
-                return (False, errtext)
+                errtext = mat.writeMHmat(self.clothesObj, outputFile)
+                if errtext:
+                    return (False, errtext)
 
+            else:
+                print("Using limited MakeClothes material model, ie not MakeSkin")
+                (b, hint) = self.writeMhMat()
+                if b is False:
+                    return (False, hint)
         else:
-            print("Using limited MakeClothes material model, ie not MakeSkin")
-            (b, hint) = self.writeMhMat()
-            if b is False:
-                return (False, hint)
+            print ("Material is not overwritten")
 
         if self.debug:
             self.writeDebug()
@@ -239,6 +257,7 @@ class MakeClothes():
         for vgroupIdx in self.clothesmesh.vertexGroupNames.keys():
             vgroupName = self.clothesmesh.vertexGroupNames[vgroupIdx]
             clothesVertices = self.clothesmesh.vertexGroupVertices[vgroupIdx]
+            self.isTriangle = False
 
             # skip empty groups on clothes
             #
@@ -302,7 +321,6 @@ class MakeClothes():
     def findBestFaces(self):
         # In this method we will go through the vertexmatches and if needed switch which vertices are selected so that all
         # vertices belong to the same face.
-
         for vm in self.vertexMatches:
 
             # exact matches stay as they are
@@ -497,9 +515,6 @@ class MakeClothes():
                 vertexMatch.distance = [0,0,0]
 
     def setupTargetDirectory(self):
-        cleanedName = re.sub(r'\s+',"_",self.exportName)
-        self.cleanedName = re.sub(r'[./\\]+', "", cleanedName)
-        self.dirName = os.path.join(self.exportRoot,cleanedName)
         if not os.path.exists(self.dirName):
             os.makedirs(self.dirName)
 

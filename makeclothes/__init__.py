@@ -2,17 +2,17 @@
 # -*- coding: utf-8 -*-
 
 #  Authors: Joel Palmius
-#           black-punkduck
+#           black-punkduck (Maintainer)
 
 #
 # must be before(!) all imports
 #
 bl_info = {
     "name": "MakeClothes",
-    "author": "Joel Palmius",
-    "version": (2,1,0),
+    "author": "black-punkduck, Joel Palmius",
+    "version": (2,2,0),
     "blender": (2,80,0),
-    "location": "View3D > Properties > Make Target",
+    "location": "View3D > Properties > MakeClothes2",
     "description": "Create MakeHuman Clothes",
     'wiki_url': "http://www.makehumancommunity.org/",
     "category": "MakeHuman"}

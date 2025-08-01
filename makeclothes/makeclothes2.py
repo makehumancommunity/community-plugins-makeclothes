@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-#  Author: Joel Palmius, punkduck
+#  Author: Joel Palmius, black-punkduck
 
 # layout:
 #
@@ -41,7 +41,9 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
         commonSettingsBox.label(text="Common settings", icon="TOOL_SETTINGS")
         col = commonSettingsBox.column()
         row = col.row()
-        row.prop(scn, 'MHOverwrite', text="Overwrite existent files")
+        row.prop(scn, 'MHOverwrite', text="Overwrite existent geometry")
+        row = col.row()
+        row.prop(scn, 'MHOverwriteMat', text="Overwrite existent material")
         row = col.row()
         row.prop(scn, 'MHAllowMods', text="Allow modifiers")
         row = col.row()
