@@ -12,6 +12,7 @@
 
 import bpy
 from . import bl_info   # to get information about version
+from .utils import getMHUserRoot
 
 class MHC_PT_MakeClothesPanel(bpy.types.Panel):
     bl_label = bl_info["name"] + " v %d.%d.%d" % bl_info["version"]
@@ -41,6 +42,8 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
         commonSettingsBox.label(text="Common settings", icon="TOOL_SETTINGS")
         col = commonSettingsBox.column()
         row = col.row()
+        row.prop(scn, 'MHVersion', text="Use MakeHuman Version II")
+        row = col.row()
         row.prop(scn, 'MHOverwrite', text="Overwrite existent geometry")
         row = col.row()
         row.prop(scn, 'MHOverwriteMat', text="Overwrite existent material")
@@ -58,16 +61,26 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
         # get and check human
         #
         humanBox = layout.box()
-        humanBox.label(text="Human", icon="MESH_DATA")
-        if not base_available:
-            if context.scene.MH_predefinedMeshes != "---":
-                humanBox.prop(context.scene, 'MH_predefinedMeshes')
+        humanBox.label(text="Human/Basis", icon="MESH_DATA")
+        if hasattr(obj, "MhMeshType"):
+            row = humanBox.row()
+            row.label(text="Base")
+            row.prop(obj, 'MhMeshType', text="")
+            meshtype = obj.MhMeshType
+        else:
+            meshtype = None
+
+        if not base_available and (meshtype == "hm08" or meshtype is None):
+            if scn.MH_predefinedMeshes != "---":
+                humanBox.prop(scn, 'MH_predefinedMeshes')
                 humanBox.operator("makeclothes.importpredef", text="Import predefined human")
             humanBox.operator("makeclothes.importhuman", text="Import human (.obj)")
 
-        humanBox.operator("makeclothes.mark_as_human", text="Mark as human")
-        humanBox.operator("makeclothes.check_human", text="Check human")
-        humanBox.operator("makeclothes.delete_helper", text="Delete helpers")
+        basis = "human" if meshtype == "hm08" else "basis"
+        humanBox.operator("makeclothes.mark_as_human", text="Mark as " + basis)
+        humanBox.operator("makeclothes.check_human", text="Check " + basis)
+        if meshtype == "hm08":
+            humanBox.operator("makeclothes.delete_helper", text="Delete helpers")
         if  shape_keys:
             humanBox.operator("makeclothes.apply_shapekeys", text="Apply targets")
 
@@ -76,8 +89,9 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
         setupBox = layout.box()
         setupBox.label(text="Clothes", icon="MESH_DATA")
 
-        setupBox.label(text="Optional base for clothes:")
-        setupBox.operator("makeclothes.extract_clothes", text="Extract from Helper")
+        if meshtype == "hm08":
+            setupBox.label(text="Optional base for clothes:")
+            setupBox.operator("makeclothes.extract_clothes", text="Extract from Helper")
 
         setupBox.label(text="Edit existent clothes:")
         setupBox.operator("makeclothes.import_mhclo", text="Import clothes file")
@@ -111,6 +125,16 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
                 produceBox.label(text="Delete-Group on Base-Mesh")
                 produceBox.prop(obj, 'MhDeleteGroup', text="")
                 produceBox.prop(scn, 'MhMcMakeSkin', text="Use MakeSkin")
+                datafolder = getMHUserRoot(scn.MHVersion)
+                if scn.MHVersion:
+                    version = "II"
+                else:
+                    version = "I"
+                produceBox.label(text="Data folder MakeHuman " + version)
+                produceBox.label(text=datafolder)
+                row = produceBox.row()
+                row.label(text="Alternative path:")
+                row.prop(scn, 'MHAltPath', text="")
                 produceBox.label(text="Destination subdir")
                 produceBox.prop(scn, 'MHClothesDestination', text="")
                 produceBox.operator("makeclothes.create_clothes", text="Make clothes")

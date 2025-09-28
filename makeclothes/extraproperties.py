@@ -30,6 +30,7 @@ _destination.append(("eyelashes", "eyelashes", "Eyelashes subdir", 5))
 _destination.append(("tongue", "tongue", "Tongue subdir", 6))
 # TODO: Maybe we should cover topologies too? Would need other file ext though
 _destination_description = "This is the subdirectory (under data) where we should put the produced clothes"
+_datafolder_description = "Add an alternative folder to write files, if none was given."
 
 mh_tags = {}
 mh_readitem = []
@@ -91,7 +92,9 @@ def extraProperties():
 
     bpy.types.Scene.MH_predefinedMeshes = bpy.props.EnumProperty(items=enumlist_meshes, name="Human", description=_blendDescription)
     bpy.types.Scene.MHAdditionalTags = bpy.props.StringProperty(name="Additional tags", description=_tagsDescriptionAdd, default="")
+    bpy.types.Scene.MHAltPath = bpy.props.StringProperty(name="Alternative data folder", description=_datafolder_description, default="")
     bpy.types.Scene.MHClothesDestination = bpy.props.EnumProperty(items=_destination, name="Clothes destination", description=_destination_description, default="clothes")
+    bpy.types.Scene.MHVersion = BoolProperty(name="Use Makehuman version II", description="Must be marked, if you want to create an object for MakeHuman Version II", default=False)
     bpy.types.Scene.MHOverwrite = BoolProperty(name="Overwrite existent geometry", description="Must be marked, if you want to replace old geometry files (.mhclo, .obj)", default=False)
     bpy.types.Scene.MHOverwriteMat = BoolProperty(name="Overwrite existent material", description="Must be marked, if you want to replace old material (.mhmat file)", default=False)
     bpy.types.Scene.MHAllowMods = BoolProperty(name="Allow modifiers", description="Must be marked, if modifiers should be taken into account", default=True)

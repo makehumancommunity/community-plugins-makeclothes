@@ -284,22 +284,30 @@ class MHC_OT_ImportClothesOperator(bpy.types.Operator, ImportHelper):
         description="File path used for importing the mhclo file", 
         maxlen= 1024)
 
-    @classmethod
-    def poll(self, context):
-        return True
-
-    def invoke(self, context, event):
-        self.filepath = getClothesRoot("")
-        wm = context.window_manager.fileselect_add(self)
-        return {'RUNNING_MODAL'}
-    
-    def execute(self, context):
+    def getHuman(self, context):
         humanObj = None
         for obj in context.scene.objects:
             if hasattr(obj, "MhObjectType"):
                 if obj.MhObjectType == "Basemesh":
                     humanObj = obj
                     break
+        return humanObj
+
+    @classmethod
+    def poll(self, context):
+        return True
+
+    def invoke(self, context, event):
+        humanObj = self.getHuman(context)
+        if humanObj is not None:
+            self.filepath = getClothesRoot(context.scene.MHVersion, humanObj.MhMeshType) + "/"
+        else:
+            self.filepath = getClothesRoot(context.scene.MHVersion, None) + "/"
+        wm = context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+    
+    def execute(self, context):
+        humanObj = self.getHuman(context)
 
         im = import_mhclo()
         im.load (context, self.properties)

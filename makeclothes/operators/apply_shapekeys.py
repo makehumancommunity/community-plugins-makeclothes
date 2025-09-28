@@ -3,7 +3,6 @@
 
 import bpy
 import os
-from ..utils import getClothesRoot
 
 class MHC_OT_ApplyShapeKeysOperator(bpy.types.Operator):
     """Apply shapekeys"""

@@ -4,6 +4,7 @@
 #  Author: Joel Palmius, black-punkduck
 
 import os
+import json
 import io
 import sys
 import bpy
@@ -33,7 +34,6 @@ def getMyDocuments():
             name, type = winreg.QueryValueEx(k, 'Personal')
 
             if type == 1:
-                print(("Found My Documents folder: %s" % name))
                 return name
         except Exception as e:
             print("Did not find path to My Documents folder")
@@ -42,7 +42,6 @@ def getMyDocuments():
             from .xdg_parser import XDG_PATHS
             doc_folder = XDG_PATHS.get('DOCUMENTS', '')
             if doc_folder and doc_folder != "":
-                print("Using " + doc_folder + " as user root")
                 return doc_folder
         except:
             print("Error when trying to get DOCUMENTS dir")
@@ -51,22 +50,42 @@ def getMyDocuments():
 #
 # use exact the same method as makehuman if a makehuman.conf file exists
 
-def pathFromConfigFile():
+def pathFromConfigFile(isNew):
     configFile = ''
     if sys.platform.startswith('linux'):
-        configFile = os.path.expanduser('~/.config/makehuman.conf')
+        if isNew:
+            configFile = os.path.expanduser('~/.config/makehuman2/makehuman2.conf')
+        else:
+            configFile = os.path.expanduser('~/.config/makehuman.conf')
 
     elif sys.platform.startswith('darwin'):
         configFile = os.path.expanduser('~/Library/Application Support/MakeHuman/makehuman.conf')
 
     elif sys.platform.startswith('win32'):
-        configFile = os.path.join(os.getenv('LOCALAPPDATA', ''), 'makehuman.conf')
-
+        if isNew:
+            configFile = os.path.join(os.getenv('LOCALAPPDATA', ''), 'makehuman2', 'makehuman2.conf')
+            if not os.path.isfile(configFile):
+                # check for virtual environment (hopefully only one python interpreter given)
+                packagedir = os.path.join(os.getenv('LOCALAPPDATA', ''), 'Packages')
+                pythonInterpreter = []
+                for f in os.listdir(packagedir):
+                    if f.startswith("PythonSoftwareFoundation.Python.") and os.path.isdir(os.path.join(packagedir, f)):
+                        pythonInterpreter.append(f)
+                if len(pythonInterpreter) == 1:
+                    configFile = os.path.join(packagedir, pythonInterpreter[0], "LocalCache", "Local", "makehuman2", "makehuman2.conf") 
+        else:
+            configFile = os.path.join(os.getenv('LOCALAPPDATA', ''), 'makehuman.conf')
     configPath = ''
 
     if os.path.isfile(configFile):
-        with io.open(configFile, 'r', encoding='utf-8') as f:
-            configPath = f.readline().strip()
+        if isNew:
+            with open(configFile) as f:
+                jdict = json.load(f)
+            if "path_home" in jdict:
+                configPath = jdict["path_home"]
+        else:
+            with io.open(configFile, 'r', encoding='utf-8') as f:
+                configPath = f.readline().strip()
 
     homepath = ""
     if os.path.isdir(configPath):
@@ -74,20 +93,35 @@ def pathFromConfigFile():
     return (homepath)
 
 
-def getMHDirectory():
-    mydocs = pathFromConfigFile()
+def getClothesRoot(isNew, mesh, subdir=None):
+    if subdir is None:
+        subdir = "clothes"
+    mhdir = pathFromConfigFile(isNew)
+
+    if len(mhdir) == 0:
+        mhdir = getMyDocuments()
+
+    if isNew:
+        if mesh is None:
+            return os.path.join(mhdir,"data",subdir)
+        else:
+            return os.path.join(mhdir,"data",subdir,mesh)
+    else:
+        # old makehuman
+        #
+        return os.path.join(mhdir,"makehuman", "v1py3", "data",subdir)
+
+def getMHUserRoot(isNew):
+    mydocs = pathFromConfigFile(isNew)
 
     if len(mydocs) == 0:
         mydocs = getMyDocuments()
 
-    mhdir = os.path.join(mydocs, "makehuman", "v1py3")
+    if isNew:
+        mhdir = os.path.join(mydocs, "data")
+    else:
+        mhdir = os.path.join(mydocs, "makehuman", "v1py3", "data")
     return mhdir
-
-def getClothesRoot(subdir = None):
-    if subdir is None:
-        subdir = "clothes"
-    mhdir = getMHDirectory()
-    return os.path.join(mhdir,"data",subdir)
 
 # 
 # function to call standard object loader
@@ -124,7 +158,7 @@ def loadObjFile(context, filename):
 #
 def checkMakeSkinIntegrity():
     for mod_name in bpy.context.preferences.addons.keys():
-        if (mod_name == "makeskin"):
+        if (mod_name == "makeskin" and mod_name in sys.modules):
             mod = sys.modules[mod_name]
             vers = mod.bl_info.get('version', (-1, -1, -1))
             if vers >= LEAST_REQUIRED_MAKESKIN_VERSION:

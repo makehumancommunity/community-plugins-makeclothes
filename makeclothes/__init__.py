@@ -10,8 +10,8 @@
 bl_info = {
     "name": "MakeClothes",
     "author": "black-punkduck, Joel Palmius",
-    "version": (2,2,0),
-    "blender": (2,80,0),
+    "version": (2,3,1),
+    "blender": (4,0,0),
     "location": "View3D > Properties > MakeClothes2",
     "description": "Create MakeHuman Clothes",
     'wiki_url': "http://www.makehumancommunity.org/",

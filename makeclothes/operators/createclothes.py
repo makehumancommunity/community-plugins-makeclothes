@@ -62,9 +62,13 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
 
         #
         # create filename and check if already existent
+        # use alternative path, if one was given
         #
         subdir = context.scene.MHClothesDestination
-        rootDir = getClothesRoot(subdir)
+        if context.scene.MHAltPath != "":
+            rootDir = context.scene.MHAltPath
+        else:
+            rootDir = getClothesRoot(context.scene.MHVersion, humanObj.MhMeshType, subdir)
         name = clothesObj.MhClothesName
         mc = MakeClothes(context, name, rootDir)
 
@@ -78,7 +82,7 @@ class MHC_OT_CreateClothesOperator(bpy.types.Operator):
         #
         # do the checks before shape key is destroyed
         #
-        (b, info, error) = checkSanityClothes(clothesObj, humanObj)
+        (b, info, error) = checkSanityClothes(clothesObj, humanObj, version2=context.scene.MHVersion)
         if b:
             bpy.ops.makeclothes.infobox('INVOKE_DEFAULT', title="Check Clothes", info=info, error=error)
             self.report({'ERROR'}, "no clothes created.")

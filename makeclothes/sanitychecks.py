@@ -209,7 +209,7 @@ def checkSanityHuman(context):
     cnt = 0
     for obj in context.scene.objects:
         if hasattr(obj, "MhObjectType"):
-            if obj.MhObjectType == "Basemesh":
+            if obj.MhObjectType == "Basemesh" or obj.MhObjectType == "_CustomBase_":
                 cnt += 1
                 if humanObj is None:
                     humanObj = obj
@@ -250,7 +250,7 @@ def checkSanityHuman(context):
 # if markmesh is True marking the mesh (selecting the vertices)
 # will always be done only for the first occuring problem
 
-def checkSanityClothes(obj, humanobj=None, markmesh=True):
+def checkSanityClothes(obj, humanobj=None, markmesh=True, version2=False):
     errortext = ""
     info  = ""
     max_def_poles = 8
@@ -271,29 +271,32 @@ def checkSanityClothes(obj, humanobj=None, markmesh=True):
         markmesh = False
     info += icon + "No stray vertices.\n"
 
-    icon = "\001"
-    suppress = 0
-    (b, hint) = checkFacesHaveAtMostFourVertices(obj, markmesh)
-    if not b:
-        errortext += "This object has at least one face with more than four vertices.\nN-gons are not supported by MakeHuman.\n" + hint
-        errorcnt += 1
-        markmesh = False
-        icon = "\002"
-        suppress = 1
-    info += icon + "Faces do not have more than 4 vertices.\n"
-
-    # in case that we have somewhere more than 4 vertices, second test will normally also fail
+    # Test for tri's or quads only for version 1
     #
-    if suppress == 0:
+    if version2 is False:
         icon = "\001"
-        (b, hint) = checkTriOrQuad(obj, markmesh)
+        suppress = 0
+        (b, hint) = checkFacesHaveAtMostFourVertices(obj, markmesh)
         if not b:
-            errortext += "This object has faces with different numbers of vertices.\nTris *or* quads are supported, but not a mix of the two.\n" + hint
+            errortext += "This object has at least one face with more than four vertices.\nN-gons are not supported by MakeHuman Version 1.\n" + hint
             errorcnt += 1
             markmesh = False
             icon = "\002"
-        info += icon + "Object is a " + hint + ".\n"
+            suppress = 1
+        info += icon + "Faces do not have more than 4 vertices.\n"
 
+        # in case that we have somewhere more than 4 vertices, second test will normally also fail
+        #
+        if suppress == 0:
+            icon = "\001"
+            (b, hint) = checkTriOrQuad(obj, markmesh)
+            if not b:
+                errortext += "This object has faces with different numbers of vertices.\nTris *or* quads are supported in MakeHuman Version 1, but not a mix of the two.\n" + hint
+                errorcnt += 1
+                markmesh = False
+                icon = "\002"
+            info += icon + "Object is a " + hint + ".\n"
+    
     icon = "\001"
     if not checkHasAnyVGroups(obj):
         errortext += "This object does not have any vertex group.\nIt has to have at least one for MakeClothes to work.\n"

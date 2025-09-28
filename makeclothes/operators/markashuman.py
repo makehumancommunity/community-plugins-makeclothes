@@ -7,6 +7,8 @@ def getMeshType(humanObj):
     for group in humanObj.vertex_groups:
         if group.name.startswith('_mesh_'):
             return group.name[6:]
+    if hasattr(humanObj, "MhMeshType") and humanObj.MhMeshType != "":
+        return humanObj.MhMeshType
     return "hm08"
 
 #
