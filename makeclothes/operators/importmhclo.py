@@ -8,6 +8,7 @@ from bpy_extras.io_utils import ImportHelper
 from bpy.props import StringProperty
 from ..utils import getClothesRoot, loadObjFile
 from ..core_makeclothes_functionality import _loadMeshJson
+from ..material import MHMat
 from addon_utils import check,paths,enable,modules
 
 class import_mhclo:
@@ -218,6 +219,7 @@ class import_mhclo:
         fp.close
 
         obj = None
+        scn = context.scene
 
         if self.obj_file != "":
             obj = loadObjFile(context, self.obj_file)
@@ -228,28 +230,20 @@ class import_mhclo:
                 context.active_object.MhClothesTags = self.tags
                 context.active_object.MhClothesDesc = self.description
                 context.active_object.MhZDepth = self.zdepth
-                context.scene.MhClothesAuthor = self.author
-                context.scene.MhClothesLicense = self.license
+                scn.MhClothesAuthor = self.author
+                scn.MhClothesLicense = self.license
                 if self.delete is True:
                     self.delete_group = "Delete_" + self.name
                     context.active_object.MhDeleteGroup = self.delete_group
 
-        if mhmat and obj and self.checkMakeSkinAvailable():
-            print("Makeskin is available. Using it to import MHMAT file too.")
-            from makeskin import MHMat, blendMatLoad
+        if mhmat and obj and scn.MHVersion:
             while len(obj.data.materials) > 0:
                 obj.data.materials.pop(index=0)
-            makeskinMaterial = MHMat(fileName=mhmat)
-            makeskinMaterial.assignAsNodesMaterialForObj(context.scene, obj, True)
+            mhmaterial = MHMat()
+            print ("read material", mhmat)
+            mhmaterial.prepare(mhmat, scn)
+            mhmaterial.assignAsNodesMaterialForObj(scn, obj, True)
         return
-
-    def checkMakeSkinAvailable(self):
-        for path in paths():
-            for mod_name, mod_path in bpy.path.module_names(path):
-                is_enabled, is_loaded = check(mod_name)
-                if mod_name == "makeskin":
-                    return is_enabled and is_loaded
-        return False
 
     def setScalings (self, context, human):
         (baseMeshType, meshConfig) = _loadMeshJson(human)

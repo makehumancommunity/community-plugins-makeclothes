@@ -19,7 +19,6 @@ from bpy_extras.io_utils import axis_conversion
 if bpy.app.version < (4,0,0):
     from io_scene_obj import import_obj
 
-LEAST_REQUIRED_MAKESKIN_VERSION = (0,9,0)
 _TRACING = True
 
 def getMyDocuments():
@@ -153,23 +152,6 @@ def loadObjFile(context, filename):
            return (obj)
 
     return (None)
-
-# completely test if a required version is available
-#
-def checkMakeSkinIntegrity():
-    for mod_name in bpy.context.preferences.addons.keys():
-        if (mod_name == "makeskin" and mod_name in sys.modules):
-            mod = sys.modules[mod_name]
-            vers = mod.bl_info.get('version', (-1, -1, -1))
-            if vers >= LEAST_REQUIRED_MAKESKIN_VERSION:
-                print("A useful version of MakeSkin is available")
-                return (True)
-            print("MakeSkin is available, but in a too old version. At least " + str(LEAST_REQUIRED_MAKESKIN_VERSION) + " is required. Not showing related options.")
-            return (False)
-
-    print("MakeSkin is not available or not enabled.")
-    return (False)
-
 
 def trace(message = None):
     global _TRACING

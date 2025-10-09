@@ -1,5 +1,5 @@
 from .mhmesh import MHMesh
-from .material import MHMaterial
+from .material import MHMat
 import json
 import math
 import re
@@ -8,10 +8,6 @@ import uuid
 import shutil
 import mathutils
 from mathutils import Vector
-from .utils import checkMakeSkinIntegrity
-
-_EVALUATED_MAKESKIN = False
-_MAKESKIN_AVAILABLE = False
 
 _knownMeshes = {}                       # place to hold all jsons of meshes, used not to reload them again and again
                                         # normally there will be only a few meshes on disk
@@ -116,7 +112,7 @@ class MakeClothes():
 
     def __init__(self, context, name, root):
         """
-        init precalculates names and use of makeskin
+        init precalculates names
         """
         self.context = context
         self.exportName = name
@@ -127,17 +123,6 @@ class MakeClothes():
         self.dirName = os.path.join(self.exportRoot,cleanedName)
         self.namePrefix = os.path.join(self.dirName, self.cleanedName)
         self.debug = context.scene.MHDebugFile
-
-        global _EVALUATED_MAKESKIN
-        global _MAKESKIN_AVAILABLE
-
-        self.useMakeSkin = False
-        if not _EVALUATED_MAKESKIN:
-            _MAKESKIN_AVAILABLE = checkMakeSkinIntegrity()
-            _EVALUATED_MAKESKIN = True
-
-        if _MAKESKIN_AVAILABLE and context:
-            self.useMakeSkin = context.scene.MhMcMakeSkin
 
 
     def params(self, clothesObj, humanObj, license="CC0", author="unknown", description="No description", overwriteMaterial=True):
@@ -224,26 +209,9 @@ class MakeClothes():
             return (False, hint)
 
         if self.overwriteMaterial or not self.mhmatExists():
-            if self.useMakeSkin:
-                print("Using makeskin to write material")
-                from makeskin import MHMat as MakeSkinMat
-
-                mat = MakeSkinMat(self.clothesObj)
-                outputFile = os.path.join(self.dirName, self.cleanedName + ".mhmat")
-
-                checkImg = mat.checkAllTexturesAreSaved()
-                if checkImg:
-                    return (False, checkImg)
-
-                errtext = mat.writeMHmat(self.clothesObj, outputFile)
-                if errtext:
-                    return (False, errtext)
-
-            else:
-                print("Using limited MakeClothes material model, ie not MakeSkin")
-                (b, hint) = self.writeMhMat()
-                if b is False:
-                    return (False, hint)
+            (b, hint) = self.writeMhMat()
+            if b is False:
+                return (False, hint)
         else:
             print ("Material is not overwritten")
 
@@ -673,24 +641,11 @@ class MakeClothes():
             return (False, "Cannot write " + outputFile + "\n" + str(e))
 
     def writeMhMat(self):
-        mhmat = MHMaterial(self.clothesObj)
+        mhmat = MHMat()
+        mhmat.prepare(self.clothesObj, self.context.scene)
         outputFile = os.path.join(self.dirName,self.cleanedName + ".mhmat")
-        try:
-            with open(outputFile,"w") as f:
-                f.write("# This is a clothes file for MakeHuman Community, exported by MakeClothes 2\n#\n")
-                f.write("# author: " + self.exportAuthor + "\n")
-                f.write("# license: " + self.exportLicense + "\n#\n")
-                f.write("name " + self.exportName + " material\n\n")
-
-                matsettings = str(mhmat)
-                f.write(matsettings)
-
-                if mhmat.diffuseTexture:
-                    bn = os.path.basename(mhmat.diffuseTexture)
-                    dest = os.path.join(self.dirName, bn)
-                    shutil.copyfile(mhmat.diffuseTexture, dest)
-                f.close()
-
-                return (True, "")
-        except EnvironmentError as e:
-            return (False, "Cannot write " + outputFile + "\n" + str(e))
+        errtext = mhmat.writeMHmat(self.context.scene, self.clothesObj, outputFile)
+        if errtext:
+            return (False, "Cannot write " + outputFile + "\n" + str(errtext))
+        else:
+            return (True, "")

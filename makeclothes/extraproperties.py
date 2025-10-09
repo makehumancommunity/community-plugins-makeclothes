@@ -8,10 +8,10 @@ import json
 import os
 from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, CollectionProperty, FloatProperty
 
-_licenses = []
-_licenses.append(("CC0",   "CC0", "Creative Commons Zero",                                                  1))
-_licenses.append(("CC-BY", "CC-BY", "Creative Commons Attribution",                                           2))
-_licenses.append(("AGPL",  "AGPL", "Affero Gnu Public License (don't use unless absolutely necessary)",     3))
+_licenses = [("CC0", "CC0", "Creative Commons Zero", 1),
+    ("CC-BY", "CC-BY", "Creative Commons Attribution", 2),
+    ("AGPL", "AGPL", "Affero Gnu Public License (don't use unless absolutely necessary)", 3)
+]
 _licenseDescription = "Set an output license for the clothes. This will have no practical effect apart from being included in the written MHCLO file."
 
 _blendDescription = "Select human from blendfile"
@@ -21,14 +21,44 @@ _tagsDescriptionAdd = "Enter Tags for MakeHuman, separate by comma"
 _nameDescription = "This is the base name of all files and directories written. A directory with the name will be created, and in it files with will be named with the name plus .mhclo, .mhmat and .obj."
 _descDescription = "This is the description of the clothes. It has no function outside being included as a comment in the produced .mhclo file."
 
-_destination = []
-_destination.append(("clothes", "clothes", "Clothes subdir", 1))
-_destination.append(("hair", "hair", "Hair subdir", 2))
-_destination.append(("teeth", "teeth", "Teeth subdir", 3))
-_destination.append(("eyebrows", "eyebrows", "Eyebrows subdir", 4))
-_destination.append(("eyelashes", "eyelashes", "Eyelashes subdir", 5))
-_destination.append(("tongue", "tongue", "Tongue subdir", 6))
-# TODO: Maybe we should cover topologies too? Would need other file ext though
+_destination = [ ("clothes", "clothes", "Clothes subdir", 1),
+    ("hair", "hair", "Hair subdir", 2),
+    ("teeth", "teeth", "Teeth subdir", 3),
+    ("eyebrows", "eyebrows", "Eyebrows subdir", 4),
+    ("eyelashes", "eyelashes", "Eyelashes subdir", 5),
+    ("tongue", "tongue", "Tongue subdir", 6)
+]
+
+_textures = [("COPY", "Copy", "Copy without rename", 1),
+    ("NORMALIZE", "Normalize", "Copy to a name based on MHMAT filename", 2),
+    ("KEEP", "Keep", "Keep the name as it is, no copy of textures", 3)
+]
+
+_texturesDescription = "Copy will copy textures to destination folder, keeping the same name. Normalize will copy them and rename the texture files to a standardized format. Keep does no copy."
+
+_litspheres = [("lit_leather", "leather", "Leather litsphere. This is appropriate for all clothes, not only leather.", 1),
+    ("lit_standard_skin", "standard skin", "Standard skin litsphere. This is appropriate for all skins.", 2),
+    ("lit_african", "african skin", "African skin litsphere", 3),
+    ("lit_asian", "asian skin", "Asian skin litsphere", 4),
+    ("lit_caucasian", "caucasian skin", "Caucasian skin litsphere", 5),
+    ("lit_toon01", "toon", "Toon skin litsphere", 6),
+    ("skinmat_eye", "eye", "Eye litsphere", 7),
+    ("lit_hair", "hair", "The standard hair litsphere without effects", 8),
+    ("lit_matte", "matte", "A litsphere to create a mat finish e.g. for a suit", 9),
+    ("lit_refl_sharp", "sharp reflection", "A litsphere designed to simulate reflection on dark leather (shoes)", 10),
+    ("lit_refl_sharp_aniso", "sharp anisotropic reflection", "A anisotropic litsphere with a mat finish", 11),
+    ("lit_refl_sharp_aniso_hard", "dark hair anisotropic reflection", "A sharp anisotropic litsphere, typically used for dark hair", 12),
+    ("lit_refl_sharp_aniso_hard_blonde", "blonde anisotropic reflection", "A sharp anisotropic litsphere, typically used for blonde hair", 13)
+]
+_litsphereDescription = "A litsphere texture is used for emulate lighting and reflections inside MakeHuman. It thus has no effect outside MakeHuman. For any clothing (not just leather), you will want to use the \"leather\" litsphere."
+
+_shaders = [("pbr", "PBR", "Shader uses physical based rendering", 1),
+    ("phong", "PHONG", "Shader uses phong algorithm", 2),
+    ("litsphere", "LITSPHERE", "Shader uses a litsphere for light", 3),
+    ("toon", "TOON", "Shader uses a special toon effect", 4)
+]
+_shaderDescription = "Shadertype to be used in MakeHuman. It thus has no effect outside MakeHuman."
+
 _destination_description = "This is the subdirectory (under data) where we should put the produced clothes"
 _datafolder_description = "Add an alternative folder to write files, if none was given."
 
@@ -97,9 +127,9 @@ def extraProperties():
     bpy.types.Scene.MHVersion = BoolProperty(name="Use Makehuman version II", description="Must be marked, if you want to create an object for MakeHuman Version II", default=False)
     bpy.types.Scene.MHOverwrite = BoolProperty(name="Overwrite existent geometry", description="Must be marked, if you want to replace old geometry files (.mhclo, .obj)", default=False)
     bpy.types.Scene.MHOverwriteMat = BoolProperty(name="Overwrite existent material", description="Must be marked, if you want to replace old material (.mhmat file)", default=False)
+    bpy.types.Scene.MhMsOverwrite = BoolProperty(name="Overwrite existing of blender objects", description="Overwrite existing material in blender", default=False)
     bpy.types.Scene.MHAllowMods = BoolProperty(name="Allow modifiers", description="Must be marked, if modifiers should be taken into account", default=True)
     bpy.types.Scene.MHDebugFile = BoolProperty(name="Save debug file", description="Must be marked, if a debug file should be saved", default=False)
-    bpy.types.Scene.MhMcMakeSkin = BoolProperty(name="Use makeskin", description="Use MakeSkin (if available) for writing material. This will be silently ignored if MakeSkin is not installed. For this to work you should have created the object's material using MakeSkin.", default=False)
 
     # Object properties, normally set by MPFB
     if not hasattr(bpy.types.Object, "MhObjectType"):
@@ -119,7 +149,25 @@ def extraProperties():
         bpy.types.Object.MhZDepth = IntProperty(name="Z-Depth", description="", default=50)
     if not hasattr(bpy.types.Object, "MhMeshType"):
         bpy.types.Object.MhMeshType  = StringProperty(name="Mesh type", description="will contain future types, currently hm08", default="hm08")
-    if not hasattr(bpy.types.Object, "MhHuman"):
-        bpy.types.Object.MhHuman = BoolProperty(name="Is MH Human", description="Old makeclothes property for deciding object type", default=False)
 
+    bpy.types.Scene.MhMsCreateDiffuse = BoolProperty(name="Create diffuse placeholder", description="Create a placeholder for a diffuse texture", default=True)
+    bpy.types.Scene.MhMsCreateNormal = BoolProperty(name="Create normal map placeholder", description="Create a placeholder for a normal map", default=False)
+    bpy.types.Scene.MhMsCreateRoughMetal = BoolProperty(name="Create roughness/metallic map placeholder", description="Create a placeholder for a roughness/metallic map", default=False)
+    bpy.types.Scene.MhMsCreateAOMap = BoolProperty(name="Create ambient occlusion map placeholder", description="Create a placeholder for a ambient occlusion map", default=False)
+    bpy.types.Scene.MhMsCreateEmission = BoolProperty(name="Create emission map placeholder", description="Create a placeholder for a emission map", default=False)
 
+    # Metadata keys
+    bpy.types.Object.MhMsName = StringProperty(name="Name", description="The name of this material. This name is used for exports e.g. with mhx2.", default="material")
+    bpy.types.Object.MhMsTag = StringProperty(name="Tag", description="A category the material fits into, for example \"blond\" or \"female\". This will influence sorting and filtering in MH.", default="")
+    bpy.types.Object.MhMsDescription = StringProperty(name="Description", description="A description of the material. It will have little practical effect apart from being written to the mhmat file.", default="")
+
+    # Boolean keys
+    bpy.types.Object.MhMsBackfaceCull = BoolProperty(name="Backface culling", description="If the back side of faces with the material should be invisible. This has no effect in exports, but may be important in MH", default=True)
+    bpy.types.Object.MhMsAlphaToCoverage = BoolProperty(name="AlphaToCoverage", description="Use A2C hardware acceleration for rendering transparency in this material", default=True)
+    bpy.types.Object.MhMsTransparent = BoolProperty(name="Transparent", description="Use transparent, when you expect that your object will be in front of another transparent object. Using the alpha-channel, MakeHuman is internally only able to render one transparent layer. Use this and switch backface culling off, when you create transparent hair.", default=False)
+    bpy.types.Object.MhMsUseLit = BoolProperty(name="Use Litsphere", description="Use the litsphere shader when rendering material in MakeHuman. This does not have any effect on materials outside MakeHuman", default=True)
+
+    # Options
+    bpy.types.Object.MhMsShader = bpy.props.EnumProperty(items=_shaders, name="Shader", description=_shaderDescription, default="pbr")
+    bpy.types.Object.MhMsLitsphere = bpy.props.EnumProperty(items=_litspheres, name="Litsphere", description=_litsphereDescription, default="lit_leather")
+    bpy.types.Object.MhMsTextures = bpy.props.EnumProperty(items=_textures, name="Textures", description=_texturesDescription, default="COPY")
