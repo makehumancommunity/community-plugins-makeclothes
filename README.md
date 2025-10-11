@@ -65,7 +65,7 @@ _The material editor is limited to the material keywords which are provided by M
 | emissiveFactor           | Color Strenght fof  principled shader, values 0-255 | intensity of light. 0-255 will be recalculated to 0-1. Blender may use bloom effects to visualize bright light |
 | metallicFactor           | Metallic entry of principled shader | metallic factor of a material, in case of a given texture it is 1.0 which is the value how much the metallic texture is used |
 | normalmapIntensity       | Strength entry of Normalmap node | intensity of normals |
-| pbrMetallicRoughness     | Roughness entry of principled shader | roughness factor of a material, in case of a texture it is 1.0 which is the value how much the roughness texture is used |
+| roughnessFactor          | Roughness entry of principled shader | roughness factor of a material, in case of a texture it is 1.0 which is the value how much the roughness texture is used |
 | shader                   | Selection box of material menu | shader type (pbr, toon, phong, litsphere) |
 | shaderParam litsphereTexture | Selection box of material menu |  a default litsphere map for litsphere shader, no effect for other shaders |
 | alphaToCoverage          | Check box of material menu | parameter to be used when having multiple transparent layers (classical used for hair) |

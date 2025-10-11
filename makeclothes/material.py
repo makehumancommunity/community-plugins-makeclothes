@@ -48,7 +48,7 @@ class MHMat:
             ### INTENSITIES ###
             MHMATFloatKey("normalmapIntensity", 1.0, 'Intensity'),
             MHMATFloatKey("metallicFactor", 0.0, 'Intensity'),
-            MHMATFloatKey("pbrMetallicRoughness", 0.5, 'Intensity'),
+            MHMATFloatKey("roughnessFactor", 0.5, 'Intensity'),
             MHMATFloatKey("aomapIntensity", 1.0, 'Intensity'),
             MHMATFloatKey("emissiveFactor", 0.0, 'Intensity'),
 
@@ -312,8 +312,7 @@ class MHMat:
             emscale = self.getPrincipledSocketDefaultValue("Emission Strength")
             sett["emissiveFactor"] =  log(emscale + 1, 2) / 8
 
-        roughness = self.getPrincipledSocketDefaultValue('Roughness')
-        sett["pbrMetallicRoughness"] = roughness
+        sett["roughnessFactor"] = self.getPrincipledSocketDefaultValue('Roughness')
         sett["metallicFactor"] = self.getPrincipledSocketDefaultValue('Metallic')
         if sett["aomapTexture"] is not None:
             sett["aomapIntensity"] = self.findNodeSocketDefaultValue('AO Mixer', 'Fac') * 2.0
@@ -419,8 +418,8 @@ class MHMat:
         if sett["diffuseTexture"] or diffusePH:
             self.createDiffuseTextureNode(sett["diffuseTexture"])
 
-        if sett["pbrMetallicRoughness"]:
-            self.setPrincipledSocketDefaultValue("Roughness", sett["pbrMetallicRoughness"])
+        if sett["roughnessFactor"]:
+            self.setPrincipledSocketDefaultValue("Roughness", sett["roughnessFactor"])
 
         if sett["metallicFactor"]:
             self.setPrincipledSocketDefaultValue("Metallic", sett["metallicFactor"])
