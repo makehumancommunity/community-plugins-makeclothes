@@ -124,7 +124,7 @@ class MHMat:
 
         # Add the Principled and Output
         self.node_principled = self.addNode('ShaderNodeBsdfPrincipled', -200, 0, "Principled-MainShader")
-        self.node_output = self.addNode('ShaderNodeOutputMaterial', 300, 0, "Output")
+        self.node_output = self.addNode('ShaderNodeOutputMaterial', 300, -200, "Output")
 
         # will be overwritten
         self.links.new(self.node_principled.outputs["BSDF"], self.node_output.inputs["Surface"])
@@ -146,6 +146,14 @@ class MHMat:
         self.links.new(self.diffuse.outputs["Alpha"], self.node_principled.inputs["Alpha"])
 
     def createAOTextureNode(self, imagePathAbsolute=None, newAO=False, ambientcolor=[1.0, 1.0, 1.0], intensity=1.0):
+
+        # a second eevee output node is needed, otherwise cycles will show weird colors,
+        # set other node to cycles
+        #
+        self.node_output_eevee = self.addNode('ShaderNodeOutputMaterial', 300, 0, "OutputEevee")
+        self.node_output_eevee.target = "EEVEE"
+        self.node_output.target = "CYCLES"
+
         if ambientcolor is None:
             ambientcolor = [1.0, 1.0, 1.0]
 
@@ -169,7 +177,8 @@ class MHMat:
         self.links.new(mixcol.outputs[0], amboc.inputs["Color"])
         self.links.new(amboc.outputs["Color"], mixshader.inputs[0])
         self.links.new(self.node_principled.outputs["BSDF"], mixshader.inputs[2])
-        self.links.new(mixshader.outputs[0], self.node_output.inputs["Surface"])
+        self.links.new(mixshader.outputs[0], self.node_output_eevee.inputs["Surface"])
+        self.links.new(self.node_principled.outputs["BSDF"], self.node_output.inputs["Surface"])
 
     def createEmissiveTextureNode(self, imagePathAbsolute=None, intensity=1.0):
         self.emimission = self.addTextureNode(imagePathAbsolute, -800, -900, True, "emissiveTexture")
