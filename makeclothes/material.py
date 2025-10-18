@@ -472,6 +472,8 @@ class MHMat:
 
         if obj.MhMsName:
             self.settings['name'] = obj.MhMsName
+        else:
+            self.settings['name'] = "material"
 
         if obj.MhMsTag:
             self.settings['tag'] = obj.MhMsTag
