@@ -79,6 +79,35 @@ class import_mhclo:
                 s["weights"][2] * hverts[n3].co + \
                 Vector(offset)
 
+        # Restore the vertex group on the base mesh.
+        human_vgroup_indices = set()
+        for n in self.verts:
+            (n1, n2, n3) = self.verts[n]["verts"]
+            # Ensure the vertex index actually exists on the human mesh
+            if n1 < hl: human_vgroup_indices.add(n1)
+            if n2 < hl: human_vgroup_indices.add(n2)
+            if n3 < hl: human_vgroup_indices.add(n3)
+
+        hgroups = human.vertex_groups
+
+        # Remove it if it already exists to avoid duplication errors
+        if self.name in hgroups:
+            hgroups.remove(hgroups.get(self.name))
+
+        # Assign the vertices to the group
+        if human_vgroup_indices:
+            vgrp_human = hgroups.new(name=self.name)
+            vgrp_human.add(list(human_vgroup_indices), 1.0, 'ADD')
+
+        # Create the vertex group for the imported clothes
+        # and assign all vertices to it
+        cgroups = self.clothes.vertex_groups
+        if self.name in cgroups:
+            cgroups.remove(cgroups.get(self.name))
+        vgrp_cloth = cgroups.new(name=self.name)
+        all_cloth_verts = list(range(len(dverts)))
+        vgrp_cloth.add(all_cloth_verts, 1.0, 'ADD')
+
         # if delete_verts is existing, create a group on the body
         #
         if self.delete:
