@@ -84,6 +84,8 @@ class MHC_PT_MakeClothesPanel(bpy.types.Panel):
                     humanBox.prop(scn, 'MH_predefinedMeshes')
                     humanBox.operator("makeclothes.importpredef", text="Import predefined human")
                 humanBox.operator("makeclothes.importhuman", text="Import human (.obj)")
+            if scn.MHVersion:
+                humanBox.operator("makeclothes.importnewbase", text="Create new base")
 
             basis = "human" if meshtype == "hm08" else "basis"
             humanBox.operator("makeclothes.mark_as_human", text="Mark as " + basis)

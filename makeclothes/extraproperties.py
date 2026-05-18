@@ -6,6 +6,7 @@
 import bpy
 import json
 import os
+import shutil
 from bpy.props import BoolProperty, StringProperty, EnumProperty, IntProperty, CollectionProperty, FloatProperty
 
 _licenses = [("CC0", "CC0", "Creative Commons Zero", 1),
@@ -74,6 +75,7 @@ def enumlist_meshes(self, context):
     global mh_readitem
 
     if len(mh_readitem) ==  0:
+        mh_readitem = []
         cnt = 0
         blendpath = os.path.join(os.path.dirname(__file__), "humans")
         if os.path.isdir(blendpath):
@@ -90,7 +92,42 @@ def enumlist_meshes(self, context):
                                 cnt += 1
         if cnt == 0:    # append dummy entry
             mh_readitem.append(("---", "---", ""))
+
     return mh_readitem
+
+def copyNewBase(self, context, fname):
+    global mh_readitem
+
+    if fname.endswith(".blend"):
+        base = fname
+        conf = base[:-6] + ".config"
+        if not os.path.isfile(conf):
+            return False, conf + " is missing!"
+    elif fname.endswith(".config"):
+        conf = fname
+        base = conf[:-7] + ".blend"
+        if not os.path.isfile(base):
+            return False, base + " is missing!"
+    else:
+        return False, "File has to end with .config or .blend"
+
+    # now copy blend file and config
+    dest = os.path.join(os.path.dirname(__file__), "humans", os.path.basename(base))
+    try:
+        shutil.copy (base, dest)
+    except OSError as e:
+        return False, "copy error: " + str(e)
+
+    dest = os.path.join(os.path.dirname(__file__), "data", os.path.basename(conf))
+    try:
+        shutil.copy (conf, dest)
+    except OSError as e:
+        return False, "copy error: " + str(e)
+
+    # re-read blend files
+    mh_readitem = []
+    bpy.types.Scene.MH_predefinedMeshes = bpy.props.EnumProperty(items=enumlist_meshes, name="Human", description=_blendDescription)
+    return True, "copied blend file to " + dest
 
 def extraProperties():
     #

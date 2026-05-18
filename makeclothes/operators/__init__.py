@@ -14,7 +14,7 @@ from .checkhuman import MHC_OT_CheckHumanOperator
 from .apply_shapekeys import MHC_OT_ApplyShapeKeysOperator
 from .deletehelper import MHC_OT_DeleteHelper
 from .tagselector import MHC_OT_TagSelector
-from .importpredef import MHC_OT_Predefined
+from .importpredef import MHC_OT_Predefined, MHC_OT_NewBase
 from .offsetscaling import MHC_OT_GetOffsetScaling
 
 OPERATOR_CLASSES = [
@@ -30,6 +30,7 @@ OPERATOR_CLASSES = [
     MHC_OT_DeleteHelper,
     MHC_OT_TagSelector,
     MHC_OT_Predefined,
+    MHC_OT_NewBase,
     MHC_OT_GetOffsetScaling
 ]
 
@@ -46,6 +47,7 @@ __all__ = [
     "MHC_OT_DeleteHelper",
     "MHC_OT_TagSelector",
     "MHC_OT_Predefined",
+    "MHC_OT_NewBase",
     "MHC_OT_GetOffsetScaling",
     "OPERATOR_CLASSES"
 ]

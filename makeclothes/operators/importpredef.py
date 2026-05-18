@@ -3,7 +3,10 @@
 
 import bpy
 import os
+from bpy_extras.io_utils import ImportHelper
+from bpy.props import StringProperty
 from .markashuman import markAsHuman
+from ..extraproperties import copyNewBase
 
 class MHC_OT_Predefined(bpy.types.Operator):
     """load predefined meshes from blend-file"""
@@ -40,3 +43,29 @@ class MHC_OT_Predefined(bpy.types.Operator):
             self.report({'INFO'}, text)
         return {'FINISHED'}
 
+class MHC_OT_NewBase(bpy.types.Operator, ImportHelper):
+    """Import a new base"""
+    bl_idname = "makeclothes.importnewbase"
+    bl_label = "New base blend file"
+    bl_options = {'REGISTER'}
+    filename_ext = ".blend"
+
+    filter_glob: StringProperty(
+            default="*.blend",
+            options={'HIDDEN'},
+    )
+    
+    @classmethod
+    def poll(self, context):
+        return True
+
+    
+    def execute(self, context):
+        # copy stuff
+        okay, text = copyNewBase(self, context, self.filepath)
+        if not okay:
+            self.report({'ERROR'}, text)
+        else:
+            self.report({'INFO'}, text)
+        return {'FINISHED'}
+   
