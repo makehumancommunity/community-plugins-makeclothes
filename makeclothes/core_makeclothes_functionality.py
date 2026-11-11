@@ -18,19 +18,19 @@ def _loadMeshJson(obj):
         meshtype = obj.MhMeshType
 
     if meshtype in _knownMeshes:        # check if we already have the mesh
-        return (meshtype, _knownMeshes[meshtype])
+        return meshtype, _knownMeshes[meshtype]
 
     meshfilename =  meshtype + ".config"
     meshfile = os.path.join(os.path.dirname(__file__), "data", meshfilename)
     try:
         cfile = open (meshfile, "r")
     except IOError:
-        return (meshtype, "")
+        return meshtype, ""
     else:
         jlines = json.load(cfile)
         cfile.close()
         _knownMeshes[meshtype] = jlines     # we got a new mesh
-        return (meshtype, jlines)
+        return meshtype, jlines
 
 def _distance(co1, co2):
     xd = co1[0] - co2[0]
@@ -43,7 +43,8 @@ def _distance(co1, co2):
 
 class _VertexMatch():
 
-    def __init__(self, clothesVertexIndex, clothesVertexX, clothesVertexY, clothesVertexZ):
+    def __init__(self, clothesVertexIndex, clothesVertexX, clothesVertexY, clothesVertexZ, optimize):
+        self.optimize = optimize
         self.index = clothesVertexIndex
         self.exactMatch = None
         self.closestHumanVertexIndices = [-1, -1, -1]
@@ -137,7 +138,7 @@ class MakeClothes():
         self.exportAuthor = author
         self.exportDescription = description
         self.scales = [1.0, 1.0, 1.0]           # x_scale, y_scale, z_scale
-        self.isTriangle = False                 # used for meshes with exact 3 vertices
+        self.nonTriangle = 0                 # used for meshes with exact 3 vertices
         self.deleteVerticesOutput = ""
         self.clothesmesh.getAdditionalIndices() 
         self.clothesmesh.getUVforExport()       # method to assign UVs to mesh
@@ -159,24 +160,24 @@ class MakeClothes():
 
         self.bodyPart = self.clothesObj.MhOffsetScale       # get the scalings
         if len(self.bodyPart) == 0:
-            return (False, "No scaling defined")
+            return False, "No scaling defined"
 
         (self.baseMeshType, self.meshConfig) = _loadMeshJson(self.humanObj)    # load parameters for scales according to mesh
         if len(self.meshConfig) == 0:
-            return (False, "Cannot open configuration file for " + self.baseMeshType)
+            return False, "Cannot open configuration file for " + self.baseMeshType
 
         if self.bodyPart not in  self.meshConfig["dimensions"]:                 # check if we have the scalings
-            return (False, "Cannot evaluate offsets for " + self.bodyPart)
+            return False, "Cannot evaluate offsets for " + self.bodyPart
 
         # also the groups have been tested we should avoid going on with an unknown group
         #
         (b, text) = self.findClosestVertices()
         if b is False:
-            return (False, text)
+            return False, text
 
         # in case of a mesh with only three vertices to follow, no additional work
         #
-        if self.isTriangle is False:
+        if self.nonTriangle > 0:
             self.findBestFaces()
             self.findExactNeighbors()
 
@@ -203,15 +204,15 @@ class MakeClothes():
         #
         (b, hint) = self.writeMhClo()
         if b is False:
-            return (False, hint)
+            return False, hint
         (b, hint) = self.writeObj()
         if b is False:
-            return (False, hint)
+            return False, hint
 
         if self.overwriteMaterial or not self.mhmatExists():
             (b, hint) = self.writeMhMat()
             if b is False:
-                return (False, hint)
+                return False, hint
         else:
             print ("Material is not overwritten")
 
@@ -219,25 +220,24 @@ class MakeClothes():
             self.writeDebug()
 
         self.selectHumanVertices()
-        return (True, "")
+        return True, ""
 
     def findClosestVertices(self):
         for vgroupIdx in self.clothesmesh.vertexGroupNames.keys():
             vgroupName = self.clothesmesh.vertexGroupNames[vgroupIdx]
             clothesVertices = self.clothesmesh.vertexGroupVertices[vgroupIdx]
-            self.isTriangle = False
 
             # skip empty groups on clothes
             #
             if len(clothesVertices) == 0:
-                next
+                continue
 
             # determine kd tree, also delivers number of vertices per group
             # 3 means triangle group, then an array is given
             #
             (size, kdtree) = self.humanmesh.vertexGroupKDTree(vgroupName) 
             if size < 3:    # group with less than 3 vertices does not work
-                return (False, "Cannot create search tree for group " + vgroupName + " on human. Number of vertices must be at least 3.")
+                return False, "Cannot create search tree for group " + vgroupName + " on human. Number of vertices must be at least 3."
 
             #
             # special code for rigid group
@@ -248,14 +248,10 @@ class MakeClothes():
                 #
                 area = mathutils.geometry.area_tri(kdtree[0].co, kdtree[1].co, kdtree[2].co)
                 if area < 0.0001:
-                    return (False, "Group " + vgroupName + ": The vertices create a triangle smaller than 0.0001, this will result in bad geometry")
-
-                # mark it a triangle to avoid further calculations
-                #
-                self.isTriangle = True
+                    return False, "Group " + vgroupName + ": The vertices create a triangle smaller than 0.0001, this will result in bad geometry"
 
                 for vertex in clothesVertices:
-                    vertexMatch = _VertexMatch(vertex[0], vertex[1], vertex[2], vertex[3])  # idx x y z
+                    vertexMatch = _VertexMatch(vertex[0], vertex[1], vertex[2], vertex[3], False)  # idx x y z
                     hCoord = []
                     j = 0
                     for vert in kdtree:     # an array in this case
@@ -266,9 +262,10 @@ class MakeClothes():
                     self.vertexMatches[vertex[0]] = vertexMatch             # put element to predefined location
                 continue
 
+            self.nonTriangle += 1
             for vertex in clothesVertices:
                 # Find the closest 3 vertices, we consider 0.0001 as an exact match
-                vertexMatch = _VertexMatch(vertex[0], vertex[1], vertex[2], vertex[3])  # idx x y z
+                vertexMatch = _VertexMatch(vertex[0], vertex[1], vertex[2], vertex[3], True)  # idx x y z
                 hCoord = []
                 j = 0
                 exact = False
@@ -284,7 +281,7 @@ class MakeClothes():
                 if exact is False:
                     vertexMatch.closestHumanVertexCoordinates = hCoord
                 self.vertexMatches[vertex[0]] = vertexMatch
-        return (True, "")
+        return True, ""
 
     def findBestFaces(self):
         # In this method we will go through the vertexmatches and if needed switch which vertices are selected so that all
@@ -293,7 +290,7 @@ class MakeClothes():
 
             # exact matches stay as they are
             #
-            if vm.exactMatch is not None:
+            if vm.exactMatch is not None or vm.optimize is False:
                 continue
 
             # check if the vertices already form a polygon, then no change is needed, this avoids that we take different vertices from this
@@ -376,7 +373,7 @@ class MakeClothes():
             #
             # only  consider faces not bound to a single vertex
             #
-            if vm.exactMatch is not None:
+            if vm.exactMatch is not None or vm.optimize is False:
                 continue
 
             # edge neighbors
@@ -413,8 +410,6 @@ class MakeClothes():
     def findWeightsAndDistances(self):
         for vertexMatch in self.vertexMatches:
             if vertexMatch.exactMatch is None:
-                # TODO: could be that further improvement like Thomas' mid vertex should be done
-
                 # To make the algorithm understandable I change our 3 vertices to triangle ABC and use Blender
                 # Vectors to be able to use internal functions like cross, dot, normal whatever you need
                 # For all vectors I use only capital letters, reading is simplified imho
@@ -585,9 +580,9 @@ class MakeClothes():
                 if self.deleteVerticesOutput != "":
                     f.write ("\ndelete_verts\n" + self.deleteVerticesOutput + "\n")
                 f.close()
-                return (True, "")
+                return True, ""
         except EnvironmentError as e:
-            return (False, "Cannot write " + outputFile + "\n" + str(e))
+            return False, "Cannot write " + outputFile + "\n" + str(e)
 
     def writeObj(self):
         # Yes, I'm aware there is a wavefront exporter in the blender API already. However, we need to make
@@ -636,9 +631,9 @@ class MakeClothes():
                             f.write(" %d" % (i + 1))
                         f.write("\n")
                 f.close()
-                return (True, "")
+                return True, ""
         except EnvironmentError as e:
-            return (False, "Cannot write " + outputFile + "\n" + str(e))
+            return False, "Cannot write " + outputFile + "\n" + str(e)
 
     def writeMhMat(self):
         mhmat = MHMat()
@@ -646,6 +641,6 @@ class MakeClothes():
         outputFile = os.path.join(self.dirName,self.cleanedName + ".mhmat")
         errtext = mhmat.writeMHmat(self.context.scene, self.clothesObj, outputFile)
         if errtext:
-            return (False, "Cannot write " + outputFile + "\n" + str(errtext))
+            return False, "Cannot write " + outputFile + "\n" + str(errtext)
         else:
-            return (True, "")
+            return True, ""
